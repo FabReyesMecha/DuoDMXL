@@ -62,12 +62,13 @@ Log:
 // Macro for the selection of the Serial Port
 //Serial refers to the USB port and is reserved for communication with a PC
 //Serial1 corresponds to the second hardware serial port (where available)
-#define sendData(args)  (Serial1.write(args))    // Write Over Serial
-#define availableData() (Serial1.available())    // Check Serial Data Available
-#define readData()      (Serial1.read())         // Read Serial Data
-#define peekData()      (Serial1.peek())         // Peek Serial Data
-#define beginCom(args)  (Serial1.begin(args))    // Begin Serial Comunication
-#define endCom()        (Serial1.end())          // End Serial Comunication
+#define sendData(args)  (Serial1.write(args))   // Write Over Serial
+#define availableData() (Serial1.available())   // Check Serial Data Available
+#define readData()      (Serial1.read())        // Read Serial Data
+#define peekData()      (Serial1.peek())        // Peek Serial Data
+#define beginCom(args)  (Serial1.begin(args))   // Begin Serial Comunication
+#define endCom()        (Serial1.end())         // End Serial Comunication
+#define serialFlush()	(Serial1.flush())		// Wait until data has been written
 
 // Macro for Timing
 #define delayus(args) (delayMicroseconds(args))  // Delay Microseconds
@@ -91,18 +92,18 @@ int DynamixelClass::read_error(void)
 	while( (availableData() <=4) && (((processTime = millis()) - startTime) <= TIME_OUT) ){}
 
 	while (availableData() > 0){
-		Incoming_Byte = readData();															//First byte of the header
+		Incoming_Byte = readData();										//First byte of the header
 		if ( (Incoming_Byte == 255) && (peekData() == 255) ){
 			readData();                                    				//Second byte of the header
 			readData();                                    				//Dynamixel ID
-			lengthMessage = readData();														//Length of the message
+			lengthMessage = readData();									//Length of the message
 
 			while( !availableData() ){}
 			Error_Byte = readData();                       				//Error
 
 			for(int i=0; i< (lengthMessage-1); i++){
 				while( !availableData() ){}
-				readData();																					//Read rest of the message. The last byte should be the checksum
+				readData();												//Read rest of the message. The last byte should be the checksum
 			}
 
 			delay(COOL_DOWN);
@@ -111,14 +112,12 @@ int DynamixelClass::read_error(void)
 	}
 
 	delay(COOL_DOWN);
-	return (-1);											 												//No servo Response
+	return (-1);											 			//No servo Response
 }
 
 //General function to read the status package from the servo
 int DynamixelClass::read_information(void)
 {
-	//int startTime = (int) millis();														//Use this for timing purposes
-	//int processTime, lengthMessage;
 	unsigned long startTime = millis();
 	unsigned long processTime;
 	int lengthMessage;
@@ -127,37 +126,37 @@ int DynamixelClass::read_information(void)
 	while( (availableData() <=4) && (((processTime=(int) millis()) - startTime) <= TIME_OUT) ){}
 
 	while (availableData() > 0){
-		Incoming_Byte = readData();															//First byte of the header
+		Incoming_Byte = readData();										//First byte of the header
 		if ( (Incoming_Byte == 255) && (peekData() == 255) ){
 			readData();                                    				//Second byte of the header
 			readData();                                    				//Dynamixel ID
-			lengthMessage = readData();														//Length of the message
+			lengthMessage = readData();									//Length of the message
 
-			while( !availableData() ){}														//Do nothing until the next byte is in the buffer
-			Error_Byte = readData();                       				// Error
+			while( !availableData() ){}									//Do nothing until the next byte is in the buffer
+			Error_Byte = readData();                       				//Error
 
 			if((lengthMessage-2) == 0){
-				data = Error_Byte;																	//No data is returned. Send Error_Byte. This is the common response when sending commands
+				data = Error_Byte;										//No data is returned. Send Error_Byte. This is the common response when sending commands
 			}
 			else if( (lengthMessage-2) == 1 ){
 				while( !availableData() ){}
-				dataLSB = readData();            										//LSB of the data
+				dataLSB = readData();            						//LSB of the data
 				data = (int) dataLSB;
 			}
 			else if((lengthMessage-2) == 2){
 				while( !availableData() ){}
-				dataLSB = readData();            										//LSB of the data
+				dataLSB = readData();            						//LSB of the data
 				while( !availableData() ){}
-				dataMSB = readData();																//MSB of the data
+				dataMSB = readData();									//MSB of the data
 				data = dataMSB << 8;
 				data = data + dataLSB;
 			}
 			else{
-				data = -2;																					//The length was not correct or there was some problem
+				data = -2;												//The length was not correct or there was some problem
 			}
 
 			while( !availableData() ){}
-			readData();																						//checksum
+			readData();													//checksum
 
 			delay(COOL_DOWN);
 			return (data);
@@ -165,7 +164,7 @@ int DynamixelClass::read_information(void)
 	}
 
 	delay(COOL_DOWN);
-	return (-1);											 											// No servo Response
+	return (-1);											 			// No servo Response
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -186,20 +185,20 @@ int DynamixelClass::sendWord(unsigned char ID, unsigned char address, int param,
 	}
 
 	switchCom(Direction_Pin,Tx_MODE);
-  sendData(DMXL_START);
-  sendData(DMXL_START);
-  sendData(ID);
-  sendData(length);
-  sendData(DMXL_WRITE_DATA);
-  sendData(address);
-  sendData(param_LSB);
+	sendData(DMXL_START);
+	sendData(DMXL_START);
+	sendData(ID);
+	sendData(length);
+	sendData(DMXL_WRITE_DATA);
+	sendData(address);
+	sendData(param_LSB);
 
 	if(noParams == TWO_BYTES){
 		sendData(param_MSB);
 	}
 
-  sendData(Checksum);
-	Serial1.flush();
+	sendData(Checksum);
+	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
 	return (read_information());
@@ -211,20 +210,21 @@ int DynamixelClass::readWord(unsigned char ID, unsigned char address, int noPara
 	Checksum = (~(ID + LENGTH_READ + DMXL_READ_DATA + address + noParams))&0xFF;
 
 	switchCom(Direction_Pin,Tx_MODE);
-  sendData(DMXL_START);
-  sendData(DMXL_START);
-  sendData(ID);
-  sendData(LENGTH_READ);
-  sendData(DMXL_READ_DATA);
-  sendData(address);
-  sendData(noParams);
-  sendData(Checksum);
-	Serial1.flush();
+	sendData(DMXL_START);
+	sendData(DMXL_START);
+	sendData(ID);
+	sendData(LENGTH_READ);
+	sendData(DMXL_READ_DATA);
+	sendData(address);
+	sendData(noParams);
+	sendData(Checksum);
+	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
 	return (read_information());
 }
 
+//Initialize communication with the servos, with a user-defined pin for the data direction control
 void DynamixelClass::begin(long baud, unsigned char directionPin)
 {
 	Direction_Pin = directionPin;
@@ -232,11 +232,14 @@ void DynamixelClass::begin(long baud, unsigned char directionPin)
 	beginCom(baud);
 }
 
+//Initialize communication with the servos, with a pre-defined pin (D15) for the data direction control
 void DynamixelClass::begin(long baud)
 {
+	setDPin(Direction_Pin, OUTPUT);
 	beginCom(baud);
 }
 
+//End communication
 void DynamixelClass::end()
 {
 	endCom();
@@ -252,7 +255,7 @@ int DynamixelClass::reset(unsigned char ID){
 	sendData(DMXL_RESET_LENGTH);
 	sendData(DMXL_RESET);
 	sendData(Checksum);
-	Serial1.flush();
+	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
   return (read_error());
@@ -275,15 +278,15 @@ int DynamixelClass::ping(unsigned char ID){
 }
 
 void DynamixelClass::action(){
-		switchCom(Direction_Pin,Tx_MODE);
+	switchCom(Direction_Pin,Tx_MODE);
     sendData(DMXL_START);                // Send Instructions over Serial
     sendData(DMXL_START);
     sendData(BROADCAST_ID);
     sendData(DMXL_ACTION_LENGTH);
     sendData(DMXL_ACTION);
     sendData(DMXL_ACTION_CHECKSUM);
-		Serial1.flush();
-		switchCom(Direction_Pin,Rx_MODE);
+	serialFlush();;
+	switchCom(Direction_Pin,Rx_MODE);
 }
 
 //Function to read the servo model. EEPROM Address 0(x00) and 1(0x01)
@@ -325,102 +328,102 @@ int DynamixelClass::readBD(unsigned char ID){
 
 //Set the Return Delay Time (RDT) in microseconds. EEPROM Address 5(0x05)
 int DynamixelClass::setRDT(unsigned char ID, unsigned char RDT){
-		return(sendWord(ID, EEPROM_RETURN_DELAY_TIME, RDT/2, ONE_BYTE));
+	return(sendWord(ID, EEPROM_RETURN_DELAY_TIME, RDT/2, ONE_BYTE));
 }
 
 //Read the Return Delay Time (RDT) value. EEPROM Address 5(0x05)
 int DynamixelClass::readRDT(unsigned char ID){
-		return(readWord(ID, EEPROM_RETURN_DELAY_TIME, ONE_BYTE));
+	return(readWord(ID, EEPROM_RETURN_DELAY_TIME, ONE_BYTE));
 }
 
 //Set the value for the CW Angle limit. EEPROM Address 6(0x06) and 7(0x07)
 int DynamixelClass::setCWAngleLimit(unsigned char ID, int limit){
-		return(sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, limit, TWO_BYTES));
+	return(sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, limit, TWO_BYTES));
 }
 
 //Read the value for the CW Angle limit. EEPROM Address 6(0x06) and 7(0x07)
 int DynamixelClass::readCWAngleLimit(unsigned char ID){
-		return(readWord(ID, EEPROM_CW_ANGLE_LIMIT_L, TWO_BYTES));
+	return(readWord(ID, EEPROM_CW_ANGLE_LIMIT_L, TWO_BYTES));
 }
 
 //Set the value for the CCW Angle limit. EEPROM Address 8(0x08) and 9(0x09)
 int DynamixelClass::setCCWAngleLimit(unsigned char ID, int limit){
-		return(sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, limit, TWO_BYTES));
+	return(sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, limit, TWO_BYTES));
 }
 
 //Read the value for the CCW Angle limit. EEPROM Address 8(0x08) and 9(0x09)
 int DynamixelClass::readCCWAngleLimit(unsigned char ID){
-		return(readWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, TWO_BYTES));
+	return(readWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, TWO_BYTES));
 }
 
 //Set the limit temperature. EEPROM Address 11(0x0B)
 int DynamixelClass::setTempLimit(unsigned char ID, unsigned char Temperature){
-		return(sendWord(ID, EEPROM_LIMIT_TEMPERATURE, Temperature, ONE_BYTE));
+	return(sendWord(ID, EEPROM_LIMIT_TEMPERATURE, Temperature, ONE_BYTE));
 }
 
 //Read the limit temperature. EEPROM Address 11(0x0B)
 int DynamixelClass::readTempLimit(unsigned char ID){
-		return(readWord(ID, EEPROM_LIMIT_TEMPERATURE, ONE_BYTE));
+	return(readWord(ID, EEPROM_LIMIT_TEMPERATURE, ONE_BYTE));
 }
 
 //Set the lowest voltage limit. EEPROM Address 12(0x0C)
 int DynamixelClass::setLowVoltageLimit(unsigned char ID, unsigned char lowVoltage){
-		return(sendWord(ID, EEPROM_DOWN_LIMIT_VOLTAGE, lowVoltage, ONE_BYTE));
+	return(sendWord(ID, EEPROM_DOWN_LIMIT_VOLTAGE, lowVoltage, ONE_BYTE));
 }
 
 //Read the lowest voltage limit. EEPROM Address 12(0x0C)
 int DynamixelClass::readLowVoltageLimit(unsigned char ID){
-		return(readWord(ID, EEPROM_DOWN_LIMIT_VOLTAGE, ONE_BYTE));
+	return(readWord(ID, EEPROM_DOWN_LIMIT_VOLTAGE, ONE_BYTE));
 }
 
 //Set the highest voltage limit. EEPROM Address 13(0x0D)
 int DynamixelClass::setHighVoltageLimit(unsigned char ID, unsigned char highVoltage){
-		return(sendWord(ID, EEPROM_UP_LIMIT_VOLTAGE, highVoltage, ONE_BYTE));
+	return(sendWord(ID, EEPROM_UP_LIMIT_VOLTAGE, highVoltage, ONE_BYTE));
 }
 
 //Read the highest voltage limit. EEPROM Address 13(0x0D)
 int DynamixelClass::readHighVoltageLimit(unsigned char ID){
-		return(readWord(ID, EEPROM_UP_LIMIT_VOLTAGE, ONE_BYTE));
+	return(readWord(ID, EEPROM_UP_LIMIT_VOLTAGE, ONE_BYTE));
 }
 
 //Set the maximum torque. EEPROM Address 14(0x0E) and 15(0x0F)
 int DynamixelClass::setMaxTorque(unsigned char ID, int MaxTorque){
-		return(sendWord(ID, EEPROM_MAX_TORQUE_L, MaxTorque, TWO_BYTES));
+	return(sendWord(ID, EEPROM_MAX_TORQUE_L, MaxTorque, TWO_BYTES));
 }
 
 //Read the maximum torque. EEPROM Address 14(0x0E) and 15(0x0F)
 int DynamixelClass::readMaxTorque(unsigned char ID){
-		return(readWord(ID, EEPROM_MAX_TORQUE_L, TWO_BYTES));
+	return(readWord(ID, EEPROM_MAX_TORQUE_L, TWO_BYTES));
 }
 
 //Set the Status Return Level. EEPROM Address 16(0x10)
 int DynamixelClass::setSRL(unsigned char ID, unsigned char SRL){
-		return(sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE));
+	return(sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE));
 }
 
 //Read the Status Return Level value. EEPROM Address 16(0x10)
 int DynamixelClass::readSRL(unsigned char ID){
-		return(readWord(ID, EEPROM_RETURN_LEVEL, ONE_BYTE));
+	return(readWord(ID, EEPROM_RETURN_LEVEL, ONE_BYTE));
 }
 
 //Set Alarm LED. EEPROM Address 17(0x11)
 int DynamixelClass::setAlarmLED(unsigned char ID, unsigned char alarm){
-		return(sendWord(ID, EEPROM_ALARM_LED, alarm, ONE_BYTE));
+	return(sendWord(ID, EEPROM_ALARM_LED, alarm, ONE_BYTE));
 }
 
 //Read Alarm LED value. EEPROM Address 17(0x11)
 int DynamixelClass::readAlarmLED(unsigned char ID){
-		return(readWord(ID, EEPROM_ALARM_LED, ONE_BYTE));
+	return(readWord(ID, EEPROM_ALARM_LED, ONE_BYTE));
 }
 
 //Set Shutdown alarm. EEPROM Address 18(0x12)
 int DynamixelClass::setShutdownAlarm(unsigned char ID, unsigned char SALARM){
-		return(sendWord(ID, EEPROM_ALARM_SHUTDOWN, SALARM, ONE_BYTE));
+	return(sendWord(ID, EEPROM_ALARM_SHUTDOWN, SALARM, ONE_BYTE));
 }
 
 //Read Shutdown alarm value. EEPROM Address 18(0x12)
 int DynamixelClass::readShutdownAlarm(unsigned char ID){
-		return(readWord(ID, EEPROM_ALARM_SHUTDOWN, ONE_BYTE));
+	return(readWord(ID, EEPROM_ALARM_SHUTDOWN, ONE_BYTE));
 }
 
 //Set the multi-turn offset values. EEPROM ADDRESS: 20(0x14) and 21(0x15)
@@ -447,52 +450,52 @@ int DynamixelClass::readResolutionDivider(unsigned char ID){
 
 //Function to turn ON or OFF torque. RAM Address 24(0x18)
 int DynamixelClass::torqueEnable( unsigned char ID, bool Status){
-		return(sendWord(ID, RAM_TORQUE_ENABLE, (int) Status, ONE_BYTE));
+	return(sendWord(ID, RAM_TORQUE_ENABLE, (int) Status, ONE_BYTE));
 }
 
 //Function to check if the servo generates torque. RAM Address 24(0x18)
 int DynamixelClass::torqueEnableStatus( unsigned char ID){
-		return(readWord(ID, RAM_TORQUE_ENABLE, ONE_BYTE));
+	return(readWord(ID, RAM_TORQUE_ENABLE, ONE_BYTE));
 }
 
 //Function to turn ON or OFF the servo's LED. RAM Address 25(0x19)
 int DynamixelClass::ledStatus(unsigned char ID, bool Status){
-		return(sendWord(ID, RAM_LED, (int) Status, ONE_BYTE));
+	return(sendWord(ID, RAM_LED, (int) Status, ONE_BYTE));
 }
 
 //Function to set the value of the Derivative gain. RAM Address 26(0x1A)
 int DynamixelClass::setGainD(unsigned char ID, int gain){
-		return(sendWord(ID, RAM_D_GAIN, gain, ONE_BYTE));
+	return(sendWord(ID, RAM_D_GAIN, gain, ONE_BYTE));
 }
 
 //Function to read the value of the Derivative gain. RAM Address 26(0x1A)
 int DynamixelClass::readGainD(unsigned char ID){
-		return(readWord(ID, RAM_D_GAIN, ONE_BYTE));
+	return(readWord(ID, RAM_D_GAIN, ONE_BYTE));
 }
 
 //Function to set the value of the Integral gain. RAM Address 27(0x1B)
 int DynamixelClass::setGainI(unsigned char ID, int gain){
-		return(sendWord(ID, RAM_I_GAIN, gain, ONE_BYTE));
+	return(sendWord(ID, RAM_I_GAIN, gain, ONE_BYTE));
 }
 
 //Function to read the value of the Integral gain. RAM Address 27(0x1B)
 int DynamixelClass::readGainI(unsigned char ID){
-		return(readWord(ID, RAM_I_GAIN, ONE_BYTE));
+	return(readWord(ID, RAM_I_GAIN, ONE_BYTE));
 }
 
 //Function to set the value of the Proportional gain. RAM Address 28(0x1C)
 int DynamixelClass::setGainP(unsigned char ID, int gain){
-		return(sendWord(ID, RAM_P_GAIN, gain, ONE_BYTE));
+	return(sendWord(ID, RAM_P_GAIN, gain, ONE_BYTE));
 }
 
 //Function to read the value of the Proportional gain. RAM Address 28(0x1C)
 int DynamixelClass::readGainP(unsigned char ID){
-		return(readWord(ID, RAM_P_GAIN, ONE_BYTE));
+	return(readWord(ID, RAM_P_GAIN, ONE_BYTE));
 }
 
 //Function to move servo to a specific position. RAM Address 30(0x1E) and 31(0x1F)
 int DynamixelClass::move(unsigned char ID, int Position){
-		return(sendWord(ID, RAM_GOAL_POSITION_L, Position, TWO_BYTES));
+	return(sendWord(ID, RAM_GOAL_POSITION_L, Position, TWO_BYTES));
 }
 
 int DynamixelClass::moveSpeed(unsigned char ID, int Position, int Speed){
@@ -502,9 +505,9 @@ int DynamixelClass::moveSpeed(unsigned char ID, int Position, int Speed){
     Speed_H = Speed >> 8;
     Speed_L = Speed;                      // 16 bits - 2 x 8 bits variables
 
-		Checksum = (~(ID + DMXL_GOAL_SP_LENGTH + DMXL_WRITE_DATA + RAM_GOAL_POSITION_L + Position_L + Position_H + Speed_L + Speed_H))&0xFF;
+	Checksum = (~(ID + DMXL_GOAL_SP_LENGTH + DMXL_WRITE_DATA + RAM_GOAL_POSITION_L + Position_L + Position_H + Speed_L + Speed_H))&0xFF;
 
-		switchCom(Direction_Pin,Tx_MODE);
+	switchCom(Direction_Pin,Tx_MODE);
     sendData(DMXL_START);                // Send Instructions over Serial
     sendData(DMXL_START);
     sendData(ID);
@@ -516,30 +519,30 @@ int DynamixelClass::moveSpeed(unsigned char ID, int Position, int Speed){
     sendData(Speed_L);
     sendData(Speed_H);
     sendData(Checksum);
-		Serial1.flush();
-		switchCom(Direction_Pin,Rx_MODE);
+	serialFlush();;
+	switchCom(Direction_Pin,Rx_MODE);
 
     return (read_error());               // Return the read error
 }
 
 //Function to set the desired moving speed. RAM Address 32(0x20) and 33(0x21)
 int DynamixelClass::setMovingSpeed(unsigned char ID, int speed){
-		return(sendWord(ID, RAM_GOAL_SPEED_L, speed, TWO_BYTES));
+	return(sendWord(ID, RAM_GOAL_SPEED_L, speed, TWO_BYTES));
 }
 
 //Function to read the desired moving speed. RAM Address 32(0x20) and 33(0x21)
 int DynamixelClass::readMovingSpeed(unsigned char ID){
-		return(readWord(ID, RAM_GOAL_SPEED_L, TWO_BYTES));
+	return(readWord(ID, RAM_GOAL_SPEED_L, TWO_BYTES));
 }
 
 //Function to set the value of the goal torque. RAM Address 34(0x22) and 35(0x23)
 int DynamixelClass::setTorqueLimit(unsigned char ID, int torque){
-		return(sendWord(ID, RAM_TORQUE_LIMIT_L, torque, TWO_BYTES));
+	return(sendWord(ID, RAM_TORQUE_LIMIT_L, torque, TWO_BYTES));
 }
 
 //Function to read the value of the goal torque. RAM Address 34(0x22) and 35(0x23)
 int DynamixelClass::readTorqueLimit(unsigned char ID){
-		return(readWord(ID, RAM_TORQUE_LIMIT_L, TWO_BYTES));
+	return(readWord(ID, RAM_TORQUE_LIMIT_L, TWO_BYTES));
 }
 
 //Read the actual position. RAM Address 36(0x24) and 37(0x25)
@@ -579,17 +582,17 @@ int DynamixelClass::moving(unsigned char ID){
 
 //Locks the EEPROM. RAM Address 47(0x2F)
 int DynamixelClass::lockEEPROM(unsigned char ID){
-		return(sendWord(ID, RAM_LOCK, 1, ONE_BYTE));
+	return(sendWord(ID, RAM_LOCK, 1, ONE_BYTE));
 }
 
 //RAM Address 48(0x30) and 49(0x31)
 int DynamixelClass::setPunch(unsigned char ID, int Punch){
-		return(sendWord(ID, RAM_PUNCH_L, Punch, TWO_BYTES));
+	return(sendWord(ID, RAM_PUNCH_L, Punch, TWO_BYTES));
 }
 
 //RAM Address 48(0x30) and 49(0x31)
 int DynamixelClass::readPunch(unsigned char ID){
-		return(readWord(ID, RAM_PUNCH_L, TWO_BYTES));
+	return(readWord(ID, RAM_PUNCH_L, TWO_BYTES));
 }
 
 //Function to read the current. RAM ADDRESS: 68(0x44) and 69(0x45)
@@ -599,22 +602,22 @@ int DynamixelClass::readCurrent(unsigned char ID){
 
 //Torque control mode enable. RAM ADDRESS: 70(0x46)
 int DynamixelClass::torqueControl( unsigned char ID, bool enable){
-		return(sendWord(ID, RAM_TORQUE_CONTROL, (int) enable, ONE_BYTE));
+	return(sendWord(ID, RAM_TORQUE_CONTROL, (int) enable, ONE_BYTE));
 }
 
 //Read the Torque control mode status. RAM ADDRESS: 70(0x46)
 int DynamixelClass::readTorqueControl( unsigned char ID){
-		return(readWord(ID, RAM_TORQUE_CONTROL, ONE_BYTE));
+	return(readWord(ID, RAM_TORQUE_CONTROL, ONE_BYTE));
 }
 
 //Function to set the goal torque. RAM ADDRESS: 71(0x47) and 72(0x48)
 int DynamixelClass::setGoalTorque(unsigned char ID, int torque){
-		return(sendWord(ID, RAM_GOAL_TORQUE_L, torque, TWO_BYTES));
+	return(sendWord(ID, RAM_GOAL_TORQUE_L, torque, TWO_BYTES));
 }
 
 //Function to set goal acceleration/ RAM ADDRESS: 73(0x49)
 int DynamixelClass::setGoalAccel(unsigned char ID, unsigned char accel){
-		return(sendWord(ID, RAM_GOAL_ACCEL, accel, ONE_BYTE));
+	return(sendWord(ID, RAM_GOAL_ACCEL, accel, ONE_BYTE));
 }
 
 //CUSTOM FUNCTIONS
@@ -629,16 +632,16 @@ void DynamixelClass::configureServo(unsigned char ID, unsigned char newID, long 
 
 //Set both angle limits.
 void DynamixelClass::setAngleLimit(unsigned char ID, int CWLimit, int CCWLimit){
-		sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, CWLimit, TWO_BYTES);
-		sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, CCWLimit, TWO_BYTES);
+	sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, CWLimit, TWO_BYTES);
+	sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, CCWLimit, TWO_BYTES);
 }
 
 //Function to set both limits to 0. The servo is functioning in wheel mode
 void DynamixelClass::setWheelMode(unsigned char ID, bool enable){
- if (enable){
-	 setAngleLimit(ID, 0, 0);}
- else{
-	 setAngleLimit(ID, 0, 4095);}
+	 if (enable){
+		 setAngleLimit(ID, 0, 0);}
+	 else{
+		 setAngleLimit(ID, 0, 4095);}
 }
 
 //Function to set the servo as joint mode. Equivalent to setWheelMode(ID, false)
@@ -648,22 +651,22 @@ void DynamixelClass::setJointMode(unsigned char ID){
 
 //Function to set all gains
 void DynamixelClass::setDIP(unsigned char ID, int gainD, int gainI, int gainP){
-		setGainD(ID, gainD);
-		setGainI(ID, gainI);
-		setGainP(ID, gainP);
+	setGainD(ID, gainD);
+	setGainI(ID, gainI);
+	setGainP(ID, gainP);
 }
 
 //Function to find the ID of the servo, if you have the correct baudrate. Assume begin() has been called
 int DynamixelClass::findByBaudRate(long baudRate){
 	int foundID;
 
-for(int i=0; i<254; i++){																	//Search every ID possible
-		if( (foundID=readID(i))!=-1 ){												//If we get anything but a communication error, return the value
+	for(int i=0; i<254; i++){												//Search every ID possible
+		if( (foundID=readID(i))!=-1 ){										//If we get anything but a communication error, return the value
 			return(foundID);
 		}
 	}
 
-	return(-1);																							//Return error if nothing found
+	return(-1);																//Return error if nothing found
 }
 
 //Function to find the baudrate to communicate with the servo, if you have the correct ID. Assume begin() has NOT been called
@@ -672,29 +675,30 @@ int DynamixelClass::findByID(unsigned char id, unsigned char directionPin){
 	long roundedBaudRate;
 
 	for(int i=0; i<=254; i++){
-		roundedBaudRate = (2000000)/(i+1);										//Search every possible baudrate
-		begin(roundedBaudRate, directionPin);									//begin communication
+		roundedBaudRate = (2000000)/(i+1);									//Search every possible baudrate
+		begin(roundedBaudRate, directionPin);								//begin communication
 
-		if( (foundID=readID(id)) == id ){											//if we get the same ID as the one we assumed correct
-			return(readBD(id));																	//return the baudrate
+		if( (foundID=readID(id)) == id ){									//if we get the same ID as the one we assumed correct
+			return(readBD(id));												//return the baudrate
 		}
 
-		end();																								//end communication
+		end();																//end communication
 	}
 
-	return(-1);																							//If nothing found, return error
+	return(-1);																//If nothing found, return error
 }
 
 //FInd the servo without having any information. Assume begin() has NOT been called
 void DynamixelClass::findServo(unsigned char directionPin){
 	int error;
 	long roundedBaudRate;
-	for(unsigned char i=0; i<=254; i++){										//Try every baudrate
+	for(unsigned char i=0; i<=254; i++){									//Try every baudrate
 	   roundedBaudRate = (2000000)/(i+1);
 	   begin(roundedBaudRate, directionPin);
 
 	   for(unsigned char j=0; j<254; j++){									//Try every ID
-	     if( (error=readID(j)) != -1){											//If we get anything but an error
+	   
+	     if( (error=readID(j)) != -1){										//If we get anything but an error
 	       //digitalWrite(led1, HIGH);
 	       Serial.print("Attempting ID: ");
 	       Serial.print(j);
