@@ -271,7 +271,7 @@ int DynamixelClass::ping(uint8_t ID){
 	sendData(DMXL_READ_DATA);
 	sendData(DMXL_PING);
 	sendData(Checksum);
-	Serial1.flush();
+	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
   return (read_error());
@@ -285,7 +285,7 @@ void DynamixelClass::action(){
     sendData(DMXL_ACTION_LENGTH);
     sendData(DMXL_ACTION);
     sendData(DMXL_ACTION_CHECKSUM);
-	serialFlush();;
+	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 }
 
