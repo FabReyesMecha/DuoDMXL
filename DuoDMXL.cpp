@@ -170,12 +170,12 @@ int DynamixelClass::read_information(void)
 // Public Methods //////////////////////////////////////////////////////////////
 
 //Function to set the value of a command. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send
-int DynamixelClass::sendWord(unsigned char ID, unsigned char address, int param, int noParams){
-	unsigned char param_MSB, param_LSB;
+int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParams){
+	uint8_t param_MSB, param_LSB;
 	param_MSB = param >> 8;
 	param_LSB = param;
 
-	unsigned char length = noParams + 3;				//instruction(address) + noParams + 2 = noParams + 3
+	uint8_t length = noParams + 3;				//instruction(address) + noParams + 2 = noParams + 3
 
 	if(noParams == ONE_BYTE){
 		Checksum = (~(ID + length + DMXL_WRITE_DATA + address + param_LSB))&0xFF;
@@ -205,7 +205,7 @@ int DynamixelClass::sendWord(unsigned char ID, unsigned char address, int param,
 }
 
 //Function to read the value of a command. noParams should be one or two, depending on how many bytes we need
-int DynamixelClass::readWord(unsigned char ID, unsigned char address, int noParams){
+int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 
 	Checksum = (~(ID + LENGTH_READ + DMXL_READ_DATA + address + noParams))&0xFF;
 
@@ -225,7 +225,7 @@ int DynamixelClass::readWord(unsigned char ID, unsigned char address, int noPara
 }
 
 //Initialize communication with the servos, with a user-defined pin for the data direction control
-void DynamixelClass::begin(long baud, unsigned char directionPin)
+void DynamixelClass::begin(long baud, uint8_t directionPin)
 {
 	Direction_Pin = directionPin;
 	setDPin(Direction_Pin, OUTPUT);
@@ -245,7 +245,7 @@ void DynamixelClass::end()
 	endCom();
 }
 
-int DynamixelClass::reset(unsigned char ID){
+int DynamixelClass::reset(uint8_t ID){
 	Checksum = (~(ID + DMXL_RESET_LENGTH + DMXL_RESET))&0xFF;
 
 	switchCom(Direction_Pin,Tx_MODE);
@@ -261,7 +261,7 @@ int DynamixelClass::reset(unsigned char ID){
   return (read_error());
 }
 
-int DynamixelClass::ping(unsigned char ID){
+int DynamixelClass::ping(uint8_t ID){
 	Checksum = (~(ID + DMXL_READ_DATA + DMXL_PING))&0xFF;
 
 	switchCom(Direction_Pin,Tx_MODE);
@@ -290,215 +290,215 @@ void DynamixelClass::action(){
 }
 
 //Function to read the servo model. EEPROM Address 0(x00) and 1(0x01)
-int DynamixelClass::readModel(unsigned char ID){
+int DynamixelClass::readModel(uint8_t ID){
 	return(readWord(ID, EEPROM_MODEL_NUMBER_L, TWO_BYTES));
 }
 
 //Function to read the version of the firmware. EEPROM Address 2(0x02)
-int DynamixelClass::readFirmware(unsigned char ID){
+int DynamixelClass::readFirmware(uint8_t ID){
 	return(readWord(ID, EEPROM_VERSION, ONE_BYTE));
 }
 
 //Function to set the ID of the servo. EEPROM Address 3(0x03)
-int DynamixelClass::setID(unsigned char ID, unsigned char newID){
+int DynamixelClass::setID(uint8_t ID, uint8_t newID){
 	return(sendWord(ID, EEPROM_ID, newID, ONE_BYTE));
 }
 
 //Function to read the ID of the servo. EEPROM Address 3(0x03)
-int DynamixelClass::readID(unsigned char ID){
+int DynamixelClass::readID(uint8_t ID){
 	return(readWord(ID, EEPROM_ID, ONE_BYTE));
 }
 
 //Function to set baudrate. EEPROM Address 4(0x04)
-int DynamixelClass::setBD(unsigned char ID, long baud){
-	unsigned char Baud_Rate = round((2000000.0/(float) baud) -1);
+int DynamixelClass::setBD(uint8_t ID, long baud){
+	uint8_t Baud_Rate = round((2000000.0/(float) baud) -1);
 
 	return(sendWord(ID, EEPROM_BAUD_RATE, Baud_Rate, ONE_BYTE));
 }
 
 //Function to set baudrate based on the manual's table. EEPROM Address 4(0x04)
-int DynamixelClass::setBDTable(unsigned char ID, unsigned char baud){
+int DynamixelClass::setBDTable(uint8_t ID, uint8_t baud){
 	return(sendWord(ID, EEPROM_BAUD_RATE, baud, ONE_BYTE));
 }
 
 //Function to read the setting of the baudrate. EEPROM Address 4(0x04)
-int DynamixelClass::readBD(unsigned char ID){
+int DynamixelClass::readBD(uint8_t ID){
 	return(readWord(ID, EEPROM_BAUD_RATE, ONE_BYTE));
 }
 
 //Set the Return Delay Time (RDT) in microseconds. EEPROM Address 5(0x05)
-int DynamixelClass::setRDT(unsigned char ID, unsigned char RDT){
+int DynamixelClass::setRDT(uint8_t ID, uint8_t RDT){
 	return(sendWord(ID, EEPROM_RETURN_DELAY_TIME, RDT/2, ONE_BYTE));
 }
 
 //Read the Return Delay Time (RDT) value. EEPROM Address 5(0x05)
-int DynamixelClass::readRDT(unsigned char ID){
+int DynamixelClass::readRDT(uint8_t ID){
 	return(readWord(ID, EEPROM_RETURN_DELAY_TIME, ONE_BYTE));
 }
 
 //Set the value for the CW Angle limit. EEPROM Address 6(0x06) and 7(0x07)
-int DynamixelClass::setCWAngleLimit(unsigned char ID, int limit){
+int DynamixelClass::setCWAngleLimit(uint8_t ID, int limit){
 	return(sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, limit, TWO_BYTES));
 }
 
 //Read the value for the CW Angle limit. EEPROM Address 6(0x06) and 7(0x07)
-int DynamixelClass::readCWAngleLimit(unsigned char ID){
+int DynamixelClass::readCWAngleLimit(uint8_t ID){
 	return(readWord(ID, EEPROM_CW_ANGLE_LIMIT_L, TWO_BYTES));
 }
 
 //Set the value for the CCW Angle limit. EEPROM Address 8(0x08) and 9(0x09)
-int DynamixelClass::setCCWAngleLimit(unsigned char ID, int limit){
+int DynamixelClass::setCCWAngleLimit(uint8_t ID, int limit){
 	return(sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, limit, TWO_BYTES));
 }
 
 //Read the value for the CCW Angle limit. EEPROM Address 8(0x08) and 9(0x09)
-int DynamixelClass::readCCWAngleLimit(unsigned char ID){
+int DynamixelClass::readCCWAngleLimit(uint8_t ID){
 	return(readWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, TWO_BYTES));
 }
 
 //Set the limit temperature. EEPROM Address 11(0x0B)
-int DynamixelClass::setTempLimit(unsigned char ID, unsigned char Temperature){
+int DynamixelClass::setTempLimit(uint8_t ID, uint8_t Temperature){
 	return(sendWord(ID, EEPROM_LIMIT_TEMPERATURE, Temperature, ONE_BYTE));
 }
 
 //Read the limit temperature. EEPROM Address 11(0x0B)
-int DynamixelClass::readTempLimit(unsigned char ID){
+int DynamixelClass::readTempLimit(uint8_t ID){
 	return(readWord(ID, EEPROM_LIMIT_TEMPERATURE, ONE_BYTE));
 }
 
 //Set the lowest voltage limit. EEPROM Address 12(0x0C)
-int DynamixelClass::setLowVoltageLimit(unsigned char ID, unsigned char lowVoltage){
+int DynamixelClass::setLowVoltageLimit(uint8_t ID, uint8_t lowVoltage){
 	return(sendWord(ID, EEPROM_DOWN_LIMIT_VOLTAGE, lowVoltage, ONE_BYTE));
 }
 
 //Read the lowest voltage limit. EEPROM Address 12(0x0C)
-int DynamixelClass::readLowVoltageLimit(unsigned char ID){
+int DynamixelClass::readLowVoltageLimit(uint8_t ID){
 	return(readWord(ID, EEPROM_DOWN_LIMIT_VOLTAGE, ONE_BYTE));
 }
 
 //Set the highest voltage limit. EEPROM Address 13(0x0D)
-int DynamixelClass::setHighVoltageLimit(unsigned char ID, unsigned char highVoltage){
+int DynamixelClass::setHighVoltageLimit(uint8_t ID, uint8_t highVoltage){
 	return(sendWord(ID, EEPROM_UP_LIMIT_VOLTAGE, highVoltage, ONE_BYTE));
 }
 
 //Read the highest voltage limit. EEPROM Address 13(0x0D)
-int DynamixelClass::readHighVoltageLimit(unsigned char ID){
+int DynamixelClass::readHighVoltageLimit(uint8_t ID){
 	return(readWord(ID, EEPROM_UP_LIMIT_VOLTAGE, ONE_BYTE));
 }
 
 //Set the maximum torque. EEPROM Address 14(0x0E) and 15(0x0F)
-int DynamixelClass::setMaxTorque(unsigned char ID, int MaxTorque){
+int DynamixelClass::setMaxTorque(uint8_t ID, int MaxTorque){
 	return(sendWord(ID, EEPROM_MAX_TORQUE_L, MaxTorque, TWO_BYTES));
 }
 
 //Read the maximum torque. EEPROM Address 14(0x0E) and 15(0x0F)
-int DynamixelClass::readMaxTorque(unsigned char ID){
+int DynamixelClass::readMaxTorque(uint8_t ID){
 	return(readWord(ID, EEPROM_MAX_TORQUE_L, TWO_BYTES));
 }
 
 //Set the Status Return Level. EEPROM Address 16(0x10)
-int DynamixelClass::setSRL(unsigned char ID, unsigned char SRL){
+int DynamixelClass::setSRL(uint8_t ID, uint8_t SRL){
 	return(sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE));
 }
 
 //Read the Status Return Level value. EEPROM Address 16(0x10)
-int DynamixelClass::readSRL(unsigned char ID){
+int DynamixelClass::readSRL(uint8_t ID){
 	return(readWord(ID, EEPROM_RETURN_LEVEL, ONE_BYTE));
 }
 
 //Set Alarm LED. EEPROM Address 17(0x11)
-int DynamixelClass::setAlarmLED(unsigned char ID, unsigned char alarm){
+int DynamixelClass::setAlarmLED(uint8_t ID, uint8_t alarm){
 	return(sendWord(ID, EEPROM_ALARM_LED, alarm, ONE_BYTE));
 }
 
 //Read Alarm LED value. EEPROM Address 17(0x11)
-int DynamixelClass::readAlarmLED(unsigned char ID){
+int DynamixelClass::readAlarmLED(uint8_t ID){
 	return(readWord(ID, EEPROM_ALARM_LED, ONE_BYTE));
 }
 
 //Set Shutdown alarm. EEPROM Address 18(0x12)
-int DynamixelClass::setShutdownAlarm(unsigned char ID, unsigned char SALARM){
+int DynamixelClass::setShutdownAlarm(uint8_t ID, uint8_t SALARM){
 	return(sendWord(ID, EEPROM_ALARM_SHUTDOWN, SALARM, ONE_BYTE));
 }
 
 //Read Shutdown alarm value. EEPROM Address 18(0x12)
-int DynamixelClass::readShutdownAlarm(unsigned char ID){
+int DynamixelClass::readShutdownAlarm(uint8_t ID){
 	return(readWord(ID, EEPROM_ALARM_SHUTDOWN, ONE_BYTE));
 }
 
 //Set the multi-turn offset values. EEPROM ADDRESS: 20(0x14) and 21(0x15)
-int DynamixelClass::setMultiTurnOffset(unsigned char ID, int offset){
+int DynamixelClass::setMultiTurnOffset(uint8_t ID, int offset){
 	return(sendWord(ID, EEPROM_TURN_OFFSET_L, offset, TWO_BYTES));
 }
 
 //Read the multi-turn offset values. EEPROM ADDRESS: 20(0x14) and 21(0x15)
-int DynamixelClass::readMultiTurnOffset(unsigned char ID){
+int DynamixelClass::readMultiTurnOffset(uint8_t ID){
 	return(readWord(ID, EEPROM_TURN_OFFSET_L, TWO_BYTES));
 }
 
 //Set the resolution divider value. EEPROM ADDRESS: 22(0x16)
-int DynamixelClass::setResolutionDivider(unsigned char ID, unsigned char divider){
+int DynamixelClass::setResolutionDivider(uint8_t ID, uint8_t divider){
 	return(sendWord(ID, EEPROM_RESOLUTION_DIV, divider, ONE_BYTE));
 }
 
 //Read the resolution divider value. EEPROM ADDRESS: 22(0x16)
-int DynamixelClass::readResolutionDivider(unsigned char ID){
+int DynamixelClass::readResolutionDivider(uint8_t ID){
 	return(readWord(ID, EEPROM_RESOLUTION_DIV, ONE_BYTE));
 }
 
 //FUNCTIONS TO ACCESS COMMANDS IN THE RAM AREA
 
 //Function to turn ON or OFF torque. RAM Address 24(0x18)
-int DynamixelClass::torqueEnable( unsigned char ID, bool Status){
+int DynamixelClass::torqueEnable( uint8_t ID, bool Status){
 	return(sendWord(ID, RAM_TORQUE_ENABLE, (int) Status, ONE_BYTE));
 }
 
 //Function to check if the servo generates torque. RAM Address 24(0x18)
-int DynamixelClass::torqueEnableStatus( unsigned char ID){
+int DynamixelClass::torqueEnableStatus( uint8_t ID){
 	return(readWord(ID, RAM_TORQUE_ENABLE, ONE_BYTE));
 }
 
 //Function to turn ON or OFF the servo's LED. RAM Address 25(0x19)
-int DynamixelClass::ledStatus(unsigned char ID, bool Status){
+int DynamixelClass::ledStatus(uint8_t ID, bool Status){
 	return(sendWord(ID, RAM_LED, (int) Status, ONE_BYTE));
 }
 
 //Function to set the value of the Derivative gain. RAM Address 26(0x1A)
-int DynamixelClass::setGainD(unsigned char ID, int gain){
+int DynamixelClass::setGainD(uint8_t ID, int gain){
 	return(sendWord(ID, RAM_D_GAIN, gain, ONE_BYTE));
 }
 
 //Function to read the value of the Derivative gain. RAM Address 26(0x1A)
-int DynamixelClass::readGainD(unsigned char ID){
+int DynamixelClass::readGainD(uint8_t ID){
 	return(readWord(ID, RAM_D_GAIN, ONE_BYTE));
 }
 
 //Function to set the value of the Integral gain. RAM Address 27(0x1B)
-int DynamixelClass::setGainI(unsigned char ID, int gain){
+int DynamixelClass::setGainI(uint8_t ID, int gain){
 	return(sendWord(ID, RAM_I_GAIN, gain, ONE_BYTE));
 }
 
 //Function to read the value of the Integral gain. RAM Address 27(0x1B)
-int DynamixelClass::readGainI(unsigned char ID){
+int DynamixelClass::readGainI(uint8_t ID){
 	return(readWord(ID, RAM_I_GAIN, ONE_BYTE));
 }
 
 //Function to set the value of the Proportional gain. RAM Address 28(0x1C)
-int DynamixelClass::setGainP(unsigned char ID, int gain){
+int DynamixelClass::setGainP(uint8_t ID, int gain){
 	return(sendWord(ID, RAM_P_GAIN, gain, ONE_BYTE));
 }
 
 //Function to read the value of the Proportional gain. RAM Address 28(0x1C)
-int DynamixelClass::readGainP(unsigned char ID){
+int DynamixelClass::readGainP(uint8_t ID){
 	return(readWord(ID, RAM_P_GAIN, ONE_BYTE));
 }
 
 //Function to move servo to a specific position. RAM Address 30(0x1E) and 31(0x1F)
-int DynamixelClass::move(unsigned char ID, int Position){
+int DynamixelClass::move(uint8_t ID, int Position){
 	return(sendWord(ID, RAM_GOAL_POSITION_L, Position, TWO_BYTES));
 }
 
-int DynamixelClass::moveSpeed(unsigned char ID, int Position, int Speed){
+int DynamixelClass::moveSpeed(uint8_t ID, int Position, int Speed){
     char Position_H,Position_L,Speed_H,Speed_L;
     Position_H = Position >> 8;
     Position_L = Position;                // 16 bits - 2 x 8 bits variables
@@ -526,104 +526,104 @@ int DynamixelClass::moveSpeed(unsigned char ID, int Position, int Speed){
 }
 
 //Function to set the desired moving speed. RAM Address 32(0x20) and 33(0x21)
-int DynamixelClass::setMovingSpeed(unsigned char ID, int speed){
+int DynamixelClass::setMovingSpeed(uint8_t ID, int speed){
 	return(sendWord(ID, RAM_GOAL_SPEED_L, speed, TWO_BYTES));
 }
 
 //Function to read the desired moving speed. RAM Address 32(0x20) and 33(0x21)
-int DynamixelClass::readMovingSpeed(unsigned char ID){
+int DynamixelClass::readMovingSpeed(uint8_t ID){
 	return(readWord(ID, RAM_GOAL_SPEED_L, TWO_BYTES));
 }
 
 //Function to set the value of the goal torque. RAM Address 34(0x22) and 35(0x23)
-int DynamixelClass::setTorqueLimit(unsigned char ID, int torque){
+int DynamixelClass::setTorqueLimit(uint8_t ID, int torque){
 	return(sendWord(ID, RAM_TORQUE_LIMIT_L, torque, TWO_BYTES));
 }
 
 //Function to read the value of the goal torque. RAM Address 34(0x22) and 35(0x23)
-int DynamixelClass::readTorqueLimit(unsigned char ID){
+int DynamixelClass::readTorqueLimit(uint8_t ID){
 	return(readWord(ID, RAM_TORQUE_LIMIT_L, TWO_BYTES));
 }
 
 //Read the actual position. RAM Address 36(0x24) and 37(0x25)
-int DynamixelClass::readPosition(unsigned char ID){
+int DynamixelClass::readPosition(uint8_t ID){
 	return(readWord(ID, RAM_PRESENT_POSITION_L, TWO_BYTES));
 }
 
 //Read the actual speed. RAM Address 38(0x26) and 39(0x27)
-int DynamixelClass::readSpeed(unsigned char ID){
+int DynamixelClass::readSpeed(uint8_t ID){
 	return(readWord(ID, RAM_PRESENT_SPEED_L, TWO_BYTES));
 }
 
 //Read the load. RAM Address 40(0x28) and 41(0x29)
-int DynamixelClass::readLoad(unsigned char ID){
+int DynamixelClass::readLoad(uint8_t ID){
 	return(readWord(ID, RAM_PRESENT_LOAD_L, TWO_BYTES));
 }
 
 //Function to read the voltage. RAM Address 42(0x2A)
-int DynamixelClass::readVoltage(unsigned char ID){
+int DynamixelClass::readVoltage(uint8_t ID){
 	readWord(ID, RAM_PRESENT_VOLTAGE, ONE_BYTE);
 }
 
 //Function to read the Temperature. RAM Address 43(0x2B)
-int DynamixelClass::readTemperature(unsigned char ID){
+int DynamixelClass::readTemperature(uint8_t ID){
 	readWord(ID, RAM_PRESENT_TEMPERATURE, ONE_BYTE);
 }
 
 //Check if there is an instruction registered. RAM Address 44(0x2C)
-int DynamixelClass::registeredStatus(unsigned char ID){
+int DynamixelClass::registeredStatus(uint8_t ID){
 	return(readWord(ID, RAM_REGISTERED_INSTRUCTION, ONE_BYTE));
 }
 
 //Check if goal position command is being executed (Address 0x30?). RAM Address 46(0x2E)
-int DynamixelClass::moving(unsigned char ID){
+int DynamixelClass::moving(uint8_t ID){
 	return(readWord(ID, RAM_MOVING, ONE_BYTE));
 }
 
 //Locks the EEPROM. RAM Address 47(0x2F)
-int DynamixelClass::lockEEPROM(unsigned char ID){
+int DynamixelClass::lockEEPROM(uint8_t ID){
 	return(sendWord(ID, RAM_LOCK, 1, ONE_BYTE));
 }
 
 //RAM Address 48(0x30) and 49(0x31)
-int DynamixelClass::setPunch(unsigned char ID, int Punch){
+int DynamixelClass::setPunch(uint8_t ID, int Punch){
 	return(sendWord(ID, RAM_PUNCH_L, Punch, TWO_BYTES));
 }
 
 //RAM Address 48(0x30) and 49(0x31)
-int DynamixelClass::readPunch(unsigned char ID){
+int DynamixelClass::readPunch(uint8_t ID){
 	return(readWord(ID, RAM_PUNCH_L, TWO_BYTES));
 }
 
 //Function to read the current. RAM ADDRESS: 68(0x44) and 69(0x45)
-int DynamixelClass::readCurrent(unsigned char ID){
+int DynamixelClass::readCurrent(uint8_t ID){
 	return(readWord(ID, RAM_CURRENT_L, TWO_BYTES));
 }
 
 //Torque control mode enable. RAM ADDRESS: 70(0x46)
-int DynamixelClass::torqueControl( unsigned char ID, bool enable){
+int DynamixelClass::torqueControl( uint8_t ID, bool enable){
 	return(sendWord(ID, RAM_TORQUE_CONTROL, (int) enable, ONE_BYTE));
 }
 
 //Read the Torque control mode status. RAM ADDRESS: 70(0x46)
-int DynamixelClass::readTorqueControl( unsigned char ID){
+int DynamixelClass::readTorqueControl( uint8_t ID){
 	return(readWord(ID, RAM_TORQUE_CONTROL, ONE_BYTE));
 }
 
 //Function to set the goal torque. RAM ADDRESS: 71(0x47) and 72(0x48)
-int DynamixelClass::setGoalTorque(unsigned char ID, int torque){
+int DynamixelClass::setGoalTorque(uint8_t ID, int torque){
 	return(sendWord(ID, RAM_GOAL_TORQUE_L, torque, TWO_BYTES));
 }
 
 //Function to set goal acceleration/ RAM ADDRESS: 73(0x49)
-int DynamixelClass::setGoalAccel(unsigned char ID, unsigned char accel){
+int DynamixelClass::setGoalAccel(uint8_t ID, uint8_t accel){
 	return(sendWord(ID, RAM_GOAL_ACCEL, accel, ONE_BYTE));
 }
 
 //CUSTOM FUNCTIONS
 
 //Configure both ID and Baudrate of the servo
-void DynamixelClass::configureServo(unsigned char ID, unsigned char newID, long baud){
+void DynamixelClass::configureServo(uint8_t ID, uint8_t newID, long baud){
 	setID(ID, newID);
 	delay(10);
 	setBD(newID, baud);
@@ -631,13 +631,13 @@ void DynamixelClass::configureServo(unsigned char ID, unsigned char newID, long 
 }
 
 //Set both angle limits.
-void DynamixelClass::setAngleLimit(unsigned char ID, int CWLimit, int CCWLimit){
+void DynamixelClass::setAngleLimit(uint8_t ID, int CWLimit, int CCWLimit){
 	sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, CWLimit, TWO_BYTES);
 	sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, CCWLimit, TWO_BYTES);
 }
 
 //Function to set both limits to 0. The servo is functioning in wheel mode
-void DynamixelClass::setWheelMode(unsigned char ID, bool enable){
+void DynamixelClass::setWheelMode(uint8_t ID, bool enable){
 	 if (enable){
 		 setAngleLimit(ID, 0, 0);}
 	 else{
@@ -645,12 +645,12 @@ void DynamixelClass::setWheelMode(unsigned char ID, bool enable){
 }
 
 //Function to set the servo as joint mode. Equivalent to setWheelMode(ID, false)
-void DynamixelClass::setJointMode(unsigned char ID){
+void DynamixelClass::setJointMode(uint8_t ID){
  	 setAngleLimit(ID, 0, 4095);
 }
 
 //Function to set all gains
-void DynamixelClass::setDIP(unsigned char ID, int gainD, int gainI, int gainP){
+void DynamixelClass::setDIP(uint8_t ID, int gainD, int gainI, int gainP){
 	setGainD(ID, gainD);
 	setGainI(ID, gainI);
 	setGainP(ID, gainP);
@@ -670,7 +670,7 @@ int DynamixelClass::findByBaudRate(long baudRate){
 }
 
 //Function to find the baudrate to communicate with the servo, if you have the correct ID. Assume begin() has NOT been called
-int DynamixelClass::findByID(unsigned char id, unsigned char directionPin){
+int DynamixelClass::findByID(uint8_t id, uint8_t directionPin){
 	int foundID;
 	long roundedBaudRate;
 
@@ -689,15 +689,15 @@ int DynamixelClass::findByID(unsigned char id, unsigned char directionPin){
 }
 
 //FInd the servo without having any information. Assume begin() has NOT been called
-void DynamixelClass::findServo(unsigned char directionPin){
+void DynamixelClass::findServo(uint8_t directionPin){
 	int error;
 	long roundedBaudRate;
-	for(unsigned char i=0; i<=254; i++){									//Try every baudrate
+	for(uint8_t i=0; i<=254; i++){									//Try every baudrate
 	   roundedBaudRate = (2000000)/(i+1);
 	   begin(roundedBaudRate, directionPin);
 
-	   for(unsigned char j=0; j<254; j++){									//Try every ID
-	   
+	   for(uint8_t j=0; j<254; j++){									//Try every ID
+
 	     if( (error=readID(j)) != -1){										//If we get anything but an error
 	       //digitalWrite(led1, HIGH);
 	       Serial.print("Attempting ID: ");

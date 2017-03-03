@@ -50,6 +50,8 @@ This program is free software: you can redistribute it and/or modify
 #ifndef DuoDMXL_h
 #define DuoDMXL_h
 
+#include <inttypes.h>
+
 	// EEPROM AREA  ///////////////////////////////////////////////////////////
 #define EEPROM_MODEL_NUMBER_L				0
 #define EEPROM_MODEL_NUMBER_H				1
@@ -145,16 +147,16 @@ This program is free software: you can redistribute it and/or modify
 #include <inttypes.h>
 
 class DynamixelClass {
-	
+
 	private:
 
-		unsigned char Checksum;
-		unsigned char Direction_Pin = D15;
-		unsigned char Incoming_Byte;
+		uint8_t Checksum;
+		uint8_t Direction_Pin = D15;
+		uint8_t Incoming_Byte;
 		int Error_Byte;
 
-		unsigned char dataLSB;
-		unsigned char dataMSB;
+		uint8_t dataLSB;
+		uint8_t dataMSB;
 		int data;
 
 		int read_error(void);
@@ -163,91 +165,91 @@ class DynamixelClass {
 	public:
 
 	//General functions
-		int sendWord(unsigned char ID, unsigned char address, int params, int noParams);
-		int readWord(unsigned char ID, unsigned char address, int noParams);
+		int sendWord(uint8_t ID, uint8_t address, int params, int noParams);
+		int readWord(uint8_t ID, uint8_t address, int noParams);
 
-		void begin(long baud, unsigned char directionPin);
+		void begin(long baud, uint8_t directionPin);
 		void begin(long baud);
 		void end(void);
 
-		int reset(unsigned char ID);
-		int ping(unsigned char ID);
+		int reset(uint8_t ID);
+		int ping(uint8_t ID);
 		void action(void);
 
 	//EEPROM Area Instructions
-		int readModel(unsigned char ID);
-		int readFirmware(unsigned char ID);
-		int setID(unsigned char ID, unsigned char newID);
-		int readID(unsigned char ID);
-		int setBD(unsigned char ID, long baud);
-		int setBDTable(unsigned char ID, unsigned char baud);
-		int readBD(unsigned char ID);
-		int setRDT(unsigned char ID, unsigned char RDT);
-		int readRDT(unsigned char ID);
-		int setCWAngleLimit(unsigned char ID, int limit);
-		int readCWAngleLimit(unsigned char ID);
-		int setCCWAngleLimit(unsigned char ID, int limit);
-		int readCCWAngleLimit(unsigned char ID);
-		int setTempLimit(unsigned char ID, unsigned char Temperature);
-		int readTempLimit(unsigned char ID);
-		int setLowVoltageLimit(unsigned char ID, unsigned char lowVoltage);
-		int readLowVoltageLimit(unsigned char ID);
-		int setHighVoltageLimit(unsigned char ID, unsigned char highVoltage);
-		int readHighVoltageLimit(unsigned char ID);
-		int setMaxTorque(unsigned char ID, int MaxTorque);
-		int readMaxTorque(unsigned char ID);
-		int setSRL(unsigned char ID, unsigned char SRL);
-		int readSRL(unsigned char ID);
-		int setAlarmLED(unsigned char ID, unsigned char alarm);
-		int readAlarmLED(unsigned char ID);
-		int setShutdownAlarm(unsigned char ID, unsigned char SALARM);
-		int readShutdownAlarm(unsigned char ID);
-		int setMultiTurnOffset(unsigned char ID, int offset);
-		int readMultiTurnOffset(unsigned char ID);
-		int setResolutionDivider(unsigned char ID, unsigned char divider);
-		int readResolutionDivider(unsigned char ID);
+		int readModel(uint8_t ID);
+		int readFirmware(uint8_t ID);
+		int setID(uint8_t ID, uint8_t newID);
+		int readID(uint8_t ID);
+		int setBD(uint8_t ID, long baud);
+		int setBDTable(uint8_t ID, uint8_t baud);
+		int readBD(uint8_t ID);
+		int setRDT(uint8_t ID, uint8_t RDT);
+		int readRDT(uint8_t ID);
+		int setCWAngleLimit(uint8_t ID, int limit);
+		int readCWAngleLimit(uint8_t ID);
+		int setCCWAngleLimit(uint8_t ID, int limit);
+		int readCCWAngleLimit(uint8_t ID);
+		int setTempLimit(uint8_t ID, uint8_t Temperature);
+		int readTempLimit(uint8_t ID);
+		int setLowVoltageLimit(uint8_t ID, uint8_t lowVoltage);
+		int readLowVoltageLimit(uint8_t ID);
+		int setHighVoltageLimit(uint8_t ID, uint8_t highVoltage);
+		int readHighVoltageLimit(uint8_t ID);
+		int setMaxTorque(uint8_t ID, int MaxTorque);
+		int readMaxTorque(uint8_t ID);
+		int setSRL(uint8_t ID, uint8_t SRL);
+		int readSRL(uint8_t ID);
+		int setAlarmLED(uint8_t ID, uint8_t alarm);
+		int readAlarmLED(uint8_t ID);
+		int setShutdownAlarm(uint8_t ID, uint8_t SALARM);
+		int readShutdownAlarm(uint8_t ID);
+		int setMultiTurnOffset(uint8_t ID, int offset);
+		int readMultiTurnOffset(uint8_t ID);
+		int setResolutionDivider(uint8_t ID, uint8_t divider);
+		int readResolutionDivider(uint8_t ID);
 
 	//RAM Area Instructions
-		int torqueEnable(unsigned char ID, bool Status);
-		int torqueEnableStatus(unsigned char ID);
-		int ledStatus(unsigned char ID, bool Status);
-		int setGainD(unsigned char ID, int gain);
-		int readGainD(unsigned char ID);
-		int setGainI(unsigned char ID, int gain);
-		int readGainI(unsigned char ID);
-		int setGainP(unsigned char ID, int gain);
-		int readGainP(unsigned char ID);
-		int move(unsigned char ID, int Position);
-		int moveSpeed(unsigned char ID, int Position, int Speed);
-		int setMovingSpeed(unsigned char ID, int speed);
-		int readMovingSpeed(unsigned char ID);
-		int setTorqueLimit(unsigned char ID, int torque);
-		int readTorqueLimit(unsigned char ID);
-		int readPosition(unsigned char ID);
-		int readSpeed(unsigned char ID);
-		int readLoad(unsigned char ID);
-		int readVoltage(unsigned char ID);
-		int readTemperature(unsigned char ID);
-		int registeredStatus(unsigned char ID);
-		int moving(unsigned char ID);
-		int lockEEPROM(unsigned char ID);
-		int setPunch(unsigned char ID, int Punch);
-		int readPunch(unsigned char ID);
-		int readCurrent(unsigned char ID);
-		int torqueControl( unsigned char ID, bool enable);
-		int readTorqueControl( unsigned char ID);
-		int setGoalTorque(unsigned char ID, int torque);
-		int setGoalAccel(unsigned char ID, unsigned char accel);
+		int torqueEnable(uint8_t ID, bool Status);
+		int torqueEnableStatus(uint8_t ID);
+		int ledStatus(uint8_t ID, bool Status);
+		int setGainD(uint8_t ID, int gain);
+		int readGainD(uint8_t ID);
+		int setGainI(uint8_t ID, int gain);
+		int readGainI(uint8_t ID);
+		int setGainP(uint8_t ID, int gain);
+		int readGainP(uint8_t ID);
+		int move(uint8_t ID, int Position);
+		int moveSpeed(uint8_t ID, int Position, int Speed);
+		int setMovingSpeed(uint8_t ID, int speed);
+		int readMovingSpeed(uint8_t ID);
+		int setTorqueLimit(uint8_t ID, int torque);
+		int readTorqueLimit(uint8_t ID);
+		int readPosition(uint8_t ID);
+		int readSpeed(uint8_t ID);
+		int readLoad(uint8_t ID);
+		int readVoltage(uint8_t ID);
+		int readTemperature(uint8_t ID);
+		int registeredStatus(uint8_t ID);
+		int moving(uint8_t ID);
+		int lockEEPROM(uint8_t ID);
+		int setPunch(uint8_t ID, int Punch);
+		int readPunch(uint8_t ID);
+		int readCurrent(uint8_t ID);
+		int torqueControl( uint8_t ID, bool enable);
+		int readTorqueControl( uint8_t ID);
+		int setGoalTorque(uint8_t ID, int torque);
+		int setGoalAccel(uint8_t ID, uint8_t accel);
 
 	//Custom functions
-		void configureServo(unsigned char ID, unsigned char newID, long baud);
-		void setAngleLimit(unsigned char ID, int CWLimit, int CCWLimit);
-		void setWheelMode(unsigned char ID, bool enable);
-		void setJointMode(unsigned char ID);
-		void setDIP(unsigned char ID, int gainD, int gainI, int gainP);
+		void configureServo(uint8_t ID, uint8_t newID, long baud);
+		void setAngleLimit(uint8_t ID, int CWLimit, int CCWLimit);
+		void setWheelMode(uint8_t ID, bool enable);
+		void setJointMode(uint8_t ID);
+		void setDIP(uint8_t ID, int gainD, int gainI, int gainP);
 		int findByBaudRate(long baudRate);
-		int findByID(unsigned char id, unsigned char directionPin);
-		void findServo(unsigned char directionPin);
+		int findByID(uint8_t id, uint8_t directionPin);
+		void findServo(uint8_t directionPin);
 };
 
 extern DynamixelClass Dynamixel;
