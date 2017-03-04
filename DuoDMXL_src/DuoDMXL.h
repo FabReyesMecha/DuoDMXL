@@ -3,7 +3,7 @@ DuoDMXL v.0.2.1
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
-	Redebar Duo
+	Redbar Duo
 	Particle Photon (not tested)
 	Arduino Leonardo (not tested)
 	or any other board with two hardware serial ports (soft serial not tested)

@@ -1,7 +1,7 @@
 # DuoDMXL
 ## Libary for servo control with Duo (Redbear) or Photon (Particle)
 
-DuoDMXL is a library for controlling Dynamixel servos using a Duo (or Photon) as main microcontroller. This library allows the user to write or read any all of the possible registers in the servomotors. Specifically, it is meant for MX-64 servomotors. Other models like AX have different EEPROM registers, but the library can be adapted.
+DuoDMXL is a library for controlling Dynamixel servos using a Duo (or Photon) as main microcontroller. This library allows the user to write or read any of the possible registers in the servomotors. Specifically, it is meant for MX-64 servomotors. Other models like AX have different EEPROM registers, but the library can be adapted.
 
 Initially, the library was based on [Savage Electronics Library](http://savageelectronics.blogspot.jp/2011/01/arduino-y-dynamixel-ax-12.html), but eventually the library started to diverge from the original. The original library used timers for several functions, which would lead to troubles using other microcontrollers, different than the Arduino UNO.
 
