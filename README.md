@@ -16,7 +16,7 @@ The Dynamixel servos have their own protocol for communication, which you can ch
 
 The DuoDMXL repository includes eagle schematics and board layouts for two types of 'shields'. The **Duo Tri-state Buffer Shield** is used for half-duplex communication. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin, and changes it into communication with only one line of data. The **Duo RS-485 Shield** is used to communicate with a RS-485 transceiver. It takes the TX and RX signals from the DUO (or Photon) and the signal of a control pin and outputs differential communication through the two signals D+ and D- (also called A and B). The library works equally with both hardware setups.
 
-![alt text]("DuoDMXL_hardware/Duo pinout.png" "Electronic Setup of Duo and servomotors")
+![alt text](DuoDMXL_hardware/Duo pinout.png "Electronic Setup of Duo and servomotors")
 
 Prerequisites:
 
