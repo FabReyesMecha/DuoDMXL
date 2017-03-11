@@ -1,0 +1,89 @@
+{
+    "docs": [
+        {
+            "location": "/",
+            "text": "DuoDMXL\n\n\nLibary for servo control with Duo (Redbear) or Photon (Particle)\n\n\nFor the source code visit \ngithub.com/FabReyesMecha/DuoDMXL\n.\n\n\nDuoDMXL is a library for controlling Dynamixel servos using a Duo (or Photon) as main microcontroller. This library allows the user to write or read all of the possible registers in the servomotors. Specifically, it is meant for MX-64 servomotors. Other models like AX have different EEPROM registers, but the library can be adapted.\n\n\nInitially, the library was based on \nSavage Electronics Library\n, but eventually started to diverge from the original. The original library used timers for several functions, which would lead to troubles using other microcontrollers, different than the Arduino UNO.\n\n\nThe main difference is that communication is delegated to the basic functions:\n\n\n\n\nsendWord(uint8_t ID, uint8_t address, int param, int noParams)\n which sends a package to the servomotors.\n\n\nread_information(void)\n which reads a response from the servomotors. It could be requested information or a simple no-error response.\n\n\n\n\nand all other functions actually call these functions with the appropiate parameters. This not only decreases the code size, but also allows for easier creation of user-defined functions.\n\n\nThe Dynamixel servos have their own protocol for communication, which you can check in the communication section of the \nROBOTIS manual\n. Depending on the servos you are communicating with, you need to transform the half-duplex UART signal of the Duo (or Photon) unto a TTL signal for some servos (e.g., MX-64T) which can be done with a tri-state buffer, or use a RS-485 transceiver for servos that use RS-485 bus (e.g., MX-64AR).\n\n\n\n\nOverview of communication. A more complete setup (including power lines) is included in the \nHardware\n section.\n\n\nThe DuoDMXL repository includes eagle schematics and board layouts for two types of 'shields'. The \nDuo Tri-state Buffer Shield\n is used for half-duplex communication. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin, and changes it into communication with only one line of data. The \nDuo RS-485 Shield\n is used to communicate with a RS-485 transceiver. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin and outputs differential communication through the two signals D+ and D- (also called A and B). The library works equally with both hardware setups.\n\n\nThe pinput of the Duo can be seen in the following picture.\n\n\n\n\nDuo Pinout.\n\n\nIn this picture a \nSMPS2Dynamixel board\n is used for adding external power (recommended for not frying your microcontroller board and for a more stable and uninterrupted performance). The Rs-485 transceiver is powered up from the Duo. Since the Duo can be powered up from several sources (e.g., directly on the 3.3V pin, through the VIN pin with a Lipo battery, or through the micro USB connector) I chose to power up the transceiver from the 3.3V pin to always guarantee the same voltage, independelty of the source. I used the \nST4485\n as RS-485 Transceiver, but you can choose other if the pin mapping is the same (e.g., \nISL32458E\n). Just be careful to choose a transceiver that uses 3.3V for power.\n\n\nPrerequisites:\n\n\n\n\nHardware:\n\n\nRS-485 transceiver or Tri-state buffer\n\n\n\n\n\n\nSoftware dependencies:\n\n\nNone (as of version 0.2.1)\n\n\n\n\n\n\n\n\nInstallation:\nThis library is mainly intended to be used with the Arduino IDE. Just download the source code and install in \n.../documents/Arduino/libraries\n.\n\n\nTODO:\n\n\n\n\nAdd more examples\n\n\nFinish mkdocs documentation\n\n\n\n\nSections\n\n\n\n\n\n\n\n\nSections\n\n\nDescription\n\n\n\n\n\n\n\n\n\n\nHome\n\n\nIntroduction to DuoDMXL\n\n\n\n\n\n\nSource Code\n\n\nDocumentation of the DuoDMXL library.\n\n\n\n\n\n\nHardware\n\n\nDocumentation for the shields necessary to interface the DYNAMIXEL servos with the Duo (RedBear) ot Photon (Particle).\n\n\n\n\n\n\nExamples\n\n\nExamples of how to use the library DuoDMXL.",
+            "title": "Home"
+        },
+        {
+            "location": "/#duodmxl",
+            "text": "",
+            "title": "DuoDMXL"
+        },
+        {
+            "location": "/#libary-for-servo-control-with-duo-redbear-or-photon-particle",
+            "text": "For the source code visit  github.com/FabReyesMecha/DuoDMXL .  DuoDMXL is a library for controlling Dynamixel servos using a Duo (or Photon) as main microcontroller. This library allows the user to write or read all of the possible registers in the servomotors. Specifically, it is meant for MX-64 servomotors. Other models like AX have different EEPROM registers, but the library can be adapted.  Initially, the library was based on  Savage Electronics Library , but eventually started to diverge from the original. The original library used timers for several functions, which would lead to troubles using other microcontrollers, different than the Arduino UNO.  The main difference is that communication is delegated to the basic functions:   sendWord(uint8_t ID, uint8_t address, int param, int noParams)  which sends a package to the servomotors.  read_information(void)  which reads a response from the servomotors. It could be requested information or a simple no-error response.   and all other functions actually call these functions with the appropiate parameters. This not only decreases the code size, but also allows for easier creation of user-defined functions.  The Dynamixel servos have their own protocol for communication, which you can check in the communication section of the  ROBOTIS manual . Depending on the servos you are communicating with, you need to transform the half-duplex UART signal of the Duo (or Photon) unto a TTL signal for some servos (e.g., MX-64T) which can be done with a tri-state buffer, or use a RS-485 transceiver for servos that use RS-485 bus (e.g., MX-64AR).   Overview of communication. A more complete setup (including power lines) is included in the  Hardware  section.  The DuoDMXL repository includes eagle schematics and board layouts for two types of 'shields'. The  Duo Tri-state Buffer Shield  is used for half-duplex communication. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin, and changes it into communication with only one line of data. The  Duo RS-485 Shield  is used to communicate with a RS-485 transceiver. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin and outputs differential communication through the two signals D+ and D- (also called A and B). The library works equally with both hardware setups.  The pinput of the Duo can be seen in the following picture.   Duo Pinout.  In this picture a  SMPS2Dynamixel board  is used for adding external power (recommended for not frying your microcontroller board and for a more stable and uninterrupted performance). The Rs-485 transceiver is powered up from the Duo. Since the Duo can be powered up from several sources (e.g., directly on the 3.3V pin, through the VIN pin with a Lipo battery, or through the micro USB connector) I chose to power up the transceiver from the 3.3V pin to always guarantee the same voltage, independelty of the source. I used the  ST4485  as RS-485 Transceiver, but you can choose other if the pin mapping is the same (e.g.,  ISL32458E ). Just be careful to choose a transceiver that uses 3.3V for power.  Prerequisites:   Hardware:  RS-485 transceiver or Tri-state buffer    Software dependencies:  None (as of version 0.2.1)     Installation:\nThis library is mainly intended to be used with the Arduino IDE. Just download the source code and install in  .../documents/Arduino/libraries .  TODO:   Add more examples  Finish mkdocs documentation",
+            "title": "Libary for servo control with Duo (Redbear) or Photon (Particle)"
+        },
+        {
+            "location": "/#sections",
+            "text": "Sections  Description      Home  Introduction to DuoDMXL    Source Code  Documentation of the DuoDMXL library.    Hardware  Documentation for the shields necessary to interface the DYNAMIXEL servos with the Duo (RedBear) ot Photon (Particle).    Examples  Examples of how to use the library DuoDMXL.",
+            "title": "Sections"
+        },
+        {
+            "location": "/source/overview/",
+            "text": "DuoDMXL Code Overview\n\n\nGeneral idea for communication between microcontroller and Dynamixel servos\n\n\nCommunication is done trhough a specific protocol for communication which is embedded in the Dynamixel servomotors. The detailed description can be found in \nROBOTIS manual\n. Specifically, to the \nCommunication 1.0\n protocol. The idea is that the microcontroller has to send a \npackage\n with a specific structure (In the Robotis manual they call this \ninstruction packet\n). Then the servo responds back with another series of bytes, structured in a similar manner. The \nresponse\n (or \nstatus packet\n in Robotis documentation) contains an error report and additional data if it was requested (e.g., we asked for the angle of the servo).\n\n\nThe package sent to the servo and the response obtained must have the following structure:\n\n\n\n\nOverview of the communication protocol.\n\n\nBoth the \npackage\n and \nresponse\n always have two bytes as \nheader\n which must be \n0xFF\n (or 255 as base 10 integer). The \ninstruction\n byte refers to the action to perform (write, read, etc.). \nParams\n is a series of bytes including the address that will be accesed on the servomotor and additional information. Do not worry, \nDuoDMXL\n takes care of parsing the package correctly and sending it.\n\n\nThe minimal response obtained for each exhange with the servo will be of six bytes (no data requested). Although the response can be disabled altogether, DuoDMXL assumes that this response is enabled always. In other words, do not turn it off unless you are willing to tweak the source code.\n\n\nExample: Configuring the EEPROM area of the Dynamixel servo\n\n\nExample: Asking for the actual position of the servo",
+            "title": "Overview of the library"
+        },
+        {
+            "location": "/source/overview/#duodmxl-code-overview",
+            "text": "",
+            "title": "DuoDMXL Code Overview"
+        },
+        {
+            "location": "/source/overview/#general-idea-for-communication-between-microcontroller-and-dynamixel-servos",
+            "text": "Communication is done trhough a specific protocol for communication which is embedded in the Dynamixel servomotors. The detailed description can be found in  ROBOTIS manual . Specifically, to the  Communication 1.0  protocol. The idea is that the microcontroller has to send a  package  with a specific structure (In the Robotis manual they call this  instruction packet ). Then the servo responds back with another series of bytes, structured in a similar manner. The  response  (or  status packet  in Robotis documentation) contains an error report and additional data if it was requested (e.g., we asked for the angle of the servo).  The package sent to the servo and the response obtained must have the following structure:   Overview of the communication protocol.  Both the  package  and  response  always have two bytes as  header  which must be  0xFF  (or 255 as base 10 integer). The  instruction  byte refers to the action to perform (write, read, etc.).  Params  is a series of bytes including the address that will be accesed on the servomotor and additional information. Do not worry,  DuoDMXL  takes care of parsing the package correctly and sending it.  The minimal response obtained for each exhange with the servo will be of six bytes (no data requested). Although the response can be disabled altogether, DuoDMXL assumes that this response is enabled always. In other words, do not turn it off unless you are willing to tweak the source code.",
+            "title": "General idea for communication between microcontroller and Dynamixel servos"
+        },
+        {
+            "location": "/source/overview/#example-configuring-the-eeprom-area-of-the-dynamixel-servo",
+            "text": "",
+            "title": "Example: Configuring the EEPROM area of the Dynamixel servo"
+        },
+        {
+            "location": "/source/overview/#example-asking-for-the-actual-position-of-the-servo",
+            "text": "",
+            "title": "Example: Asking for the actual position of the servo"
+        },
+        {
+            "location": "/source/source/",
+            "text": "Source code",
+            "title": "Code description"
+        },
+        {
+            "location": "/source/source/#source-code",
+            "text": "",
+            "title": "Source code"
+        },
+        {
+            "location": "/hardware/Duo_TristateBuffer_shield/",
+            "text": "Duo Tri-state Buffer Shield",
+            "title": "Duo Tri-state Buffer Shield"
+        },
+        {
+            "location": "/hardware/Duo_TristateBuffer_shield/#duo-tri-state-buffer-shield",
+            "text": "",
+            "title": "Duo Tri-state Buffer Shield"
+        },
+        {
+            "location": "/hardware/Duo_Rs485_shield/",
+            "text": "Duo RS-485 Shield",
+            "title": "Duo RS-485 Shield"
+        },
+        {
+            "location": "/hardware/Duo_Rs485_shield/#duo-rs-485-shield",
+            "text": "",
+            "title": "Duo RS-485 Shield"
+        },
+        {
+            "location": "/about/",
+            "text": "About this Library\n\n\nTODO.",
+            "title": "About"
+        },
+        {
+            "location": "/about/#about-this-library",
+            "text": "TODO.",
+            "title": "About this Library"
+        }
+    ]
+}
