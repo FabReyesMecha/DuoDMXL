@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="8.0.0">
+<eagle version="8.0.2">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -7519,11 +7519,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <label x="279.4" y="-134.62" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="BATT" gate="G$1" pin="2"/>
-<wire x1="-12.7" y1="-104.14" x2="-5.08" y2="-104.14" width="0.1524" layer="91"/>
-<label x="-7.62" y="-104.14" size="1.778" layer="95"/>
-</segment>
-<segment>
 <pinref part="D1" gate="G$1" pin="C"/>
 <wire x1="233.68" y1="-33.02" x2="233.68" y2="-45.72" width="0.1524" layer="91"/>
 <label x="233.68" y="-43.18" size="1.778" layer="95"/>
@@ -7532,6 +7527,11 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <pinref part="SV5" gate="G$1" pin="2"/>
 <wire x1="71.12" y1="-177.8" x2="83.82" y2="-177.8" width="0.1524" layer="91"/>
 <label x="78.74" y="-177.8" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="BATT" gate="G$1" pin="1"/>
+<wire x1="-12.7" y1="-106.68" x2="-5.08" y2="-106.68" width="0.1524" layer="91"/>
+<label x="-7.62" y="-106.68" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="INDUCTOR" class="0">
@@ -7633,14 +7633,14 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <label x="50.8" y="-180.34" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="BATT" gate="G$1" pin="1"/>
-<wire x1="-12.7" y1="-106.68" x2="-5.08" y2="-106.68" width="0.1524" layer="91"/>
-<label x="-7.62" y="-106.68" size="1.778" layer="95"/>
-</segment>
-<segment>
 <pinref part="SV5" gate="G$1" pin="1"/>
 <wire x1="71.12" y1="-180.34" x2="83.82" y2="-180.34" width="0.1524" layer="91"/>
 <label x="78.74" y="-180.34" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="BATT" gate="G$1" pin="2"/>
+<wire x1="-12.7" y1="-104.14" x2="-5.08" y2="-104.14" width="0.1524" layer="91"/>
+<label x="-7.62" y="-104.14" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="TX" class="0">
