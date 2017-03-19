@@ -125,10 +125,10 @@
 <p><img alt="Overview Communication" src="./img/overviewCommunication.png" title="Overview of Communication" />
 <em>Overview of communication. A more complete setup (including power lines) is included in the <strong>Hardware</strong> section.</em></p>
 <p>The DuoDMXL repository includes eagle schematics and board layouts for two types of 'shields'. The <strong>Duo Tri-state Buffer Shield</strong> is used for half-duplex communication. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin, and changes it into communication with only one line of data. The <strong>Duo RS-485 Shield</strong> is used to communicate with a RS-485 transceiver. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin and outputs differential communication through the two signals D+ and D- (also called A and B). The library works equally with both hardware setups.</p>
-<p>The pinput of the Duo can be seen in the following picture.</p>
+<p>The pinout of the Duo can be seen in the following picture.</p>
 <p><img alt="Duo Pinout" src="./img/Duo_pinout.png" title="Duo Pinout" />
 <em>Duo Pinout.</em></p>
-<p>In this picture a <a href="http://www.robotis-shop-en.com/?act=shop_en.goods_view&amp;GS=1267&amp;GC=GD0B0102">SMPS2Dynamixel board</a> is used for adding external power (recommended for not frying your microcontroller board and for a more stable and uninterrupted performance). The Rs-485 transceiver is powered up from the Duo. Since the Duo can be powered up from several sources (e.g., directly on the 3.3V pin, through the VIN pin with a Lipo battery, or through the micro USB connector) I chose to power up the transceiver from the 3.3V pin to always guarantee the same voltage, independelty of the source. I used the <a href="http://www.st.com/content/ccc/resource/technical/document/datasheet/25/35/10/d3/94/88/47/73/DM00093621.pdf/files/DM00093621.pdf/jcr:content/translations/en.DM00093621.pdf">ST4485</a> as RS-485 Transceiver, but you can choose other if the pin mapping is the same (e.g., <a href="http://www.intersil.com/content/dam/Intersil/documents/isl3/isl32450e-52e-53e-55e-57e-58e-59e.pdf">ISL32458E</a>). Just be careful to choose a transceiver that uses 3.3V for power.</p>
+<p>In this picture a <a href="http://www.robotis-shop-en.com/?act=shop_en.goods_view&amp;GS=1267&amp;GC=GD0B0102">SMPS2Dynamixel board</a> is used for adding external power (recommended for not frying your microcontroller board and for a more stable and uninterrupted performance). The RS-485 transceiver is powered up from the Duo. Since the Duo can be powered up from several sources (e.g., directly on the 3.3V pin, through the VIN pin with a Lipo battery, or through the micro USB connector) I chose to power up the transceiver from the 3.3V pin to always guarantee the same voltage, independently of the source. I used the <a href="http://www.st.com/content/ccc/resource/technical/document/datasheet/25/35/10/d3/94/88/47/73/DM00093621.pdf/files/DM00093621.pdf/jcr:content/translations/en.DM00093621.pdf">ST4485</a> as RS-485 transceiver, but you can choose other if the pin mapping is the same (e.g., <a href="http://www.intersil.com/content/dam/Intersil/documents/isl3/isl32450e-52e-53e-55e-57e-58e-59e.pdf">ISL32458E</a>). Just be careful to choose a transceiver that uses 3.3V for power.</p>
 <p>Prerequisites:</p>
 <ol>
 <li>Hardware:<ul>
@@ -212,5 +212,5 @@ This library is mainly intended to be used with the Arduino IDE. Just download t
 
 <!--
 MkDocs version : 0.16.1
-Build Date UTC : 2017-03-11 12:10:28
+Build Date UTC : 2017-03-19 10:37:36
 -->

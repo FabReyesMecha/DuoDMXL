@@ -104,11 +104,19 @@
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#duo-tri-state-buffer-shield">Duo Tri-state Buffer Shield</a></li>
+            <li><a href="#disclaimer">Disclaimer</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
-<h1 id="duo-tri-state-buffer-shield">Duo Tri-state Buffer Shield</h1></div>
+<h1 id="duo-tri-state-buffer-shield">Duo Tri-state Buffer Shield</h1>
+<p>The <strong>Tri-state Buffer Shield</strong> takes the TX and RX signals from the DUO, and with an additional pin for flow control, interfaces with the DYNAMIXEL servo with one line of data (half-duplex).</p>
+<p><img alt="TTL_communication.png" src="../../img/TTL_Communication.png" title="TTL Communication" /></p>
+<p>The shield includes an additional voltage boost converter <a href="https://www.maximintegrated.com/en/products/power/switching-regulators/MAX1674.html">MAX1674</a> to output 5V and drive the buffer <a href="http://www.ti.com/product/SN74LS241">SN74LS241</a>. The eagle schematic and board layout can be found in the repository. I add an additional jumper <strong>J1</strong> to control the Vcc voltage used for driving the servo. For example, if using external power (e.g., using an SMPS2Dynamixel) then the jumper must be OFF. I highly recommend to use external power, but if you need basic tests and use only small servos, maybe (MAYBE) using 5V from the board itself would be safe.</p>
+<p><img alt="TTL_Shield_schematic.png" src="../../img/duo_buffer_shield_schematic_v1.2.png" title="Tri-state buffer shield Schematic" /></p>
+<p><img alt="TTL_Shield.png" src="../../img/Duo_Tri-state_Buffer_Shield_v1.png" title="Tri-state buffer shield" /></p>
+<h2 id="disclaimer">Disclaimer</h2>
+<p>This shield has not been fully tested and I am not responsible for any malfunction or damage to your equipment. Source code and schematics are provided as-is. I suggest to take a good look at them before testing them.</p></div>
         </div>
 
         <footer class="col-md-12">
