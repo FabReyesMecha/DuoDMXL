@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.0.2.1
+DuoDMXL v.0.2.2
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,8 +34,10 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+ 2017-04-13: v.0.2.2 	Added extra comments.
+ 						changed name read_information() to readInformation()
  2016-12-22:	v0.2.1	Modified int to unsigned long in reading serial timeout
- 											Marked constants specific to MX-64 and AX-12
+ 						Marked constants specific to MX-64 and AX-12
  2016-12-21:	v.0.2
  2016-06-01:	v.0.1
 
@@ -44,7 +46,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 
  Contact: 	burgundianvolker@gmail.com
- Author:		Fabian Eugenio Reyes Pinner (Fabian Reyes)
+ Author:	Fabian Eugenio Reyes Pinner (Fabian Reyes)
  */
 
 #ifndef DuoDMXL_h
@@ -135,7 +137,7 @@ This program is free software: you can redistribute it and/or modify
 #define BROADCAST_ID                		254
 #define DMXL_START                  		255
 #define TIME_OUT                    		50        	//[ms] Waiting time for the incomming data from servomotor
-#define COOL_DOWN							1			//cool down period (milliseconds) before sending another command to the dynamixel servomotor
+#define COOL_DOWN							0			//cool down period (milliseconds) before sending another command to the dynamixel servomotor
 #define Tx_MODE                     		1
 #define Rx_MODE                     		0
 

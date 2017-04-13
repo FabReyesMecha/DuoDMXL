@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.0.2.1
+DuoDMXL v.0.2.2
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -37,8 +37,10 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 Log:
 
+2017-04-13: v.0.2.2 Added extra comments.
+					changed name read_information() to readInformation()
 2016-12-22:	v.0.2.1	Modified int to unsigned long in reading serial timeout
-										Marked constants specific to MX-64 and AX-12
+					Marked constants specific to MX-64 and AX-12
 2016-12-21:	v.0.2
 2016-06-01:	v.0.1
 
@@ -47,7 +49,7 @@ Log:
 -----------------------------------------------------------------------------
 
  Contact: 	burgundianvolker@gmail.com
- Author:		Fabian Eugenio Reyes Pinner (Fabian Reyes)
+ Author:	Fabian Eugenio Reyes Pinner (Fabian Reyes)
  */
 
 #if defined(ARDUINO) && ARDUINO >= 100  // Arduino IDE Version
@@ -80,10 +82,9 @@ Log:
 // Private Methods //////////////////////////////////////////////////////////////
 
 //Read response from the servo and return the error (if any)
+//Function inherited from Savage's library. Deprecated by readInformation()
 int DynamixelClass::read_error(void)
 {
-	//int startTime = (int) millis();
-	//int processTime, lengthMessage;
 	unsigned long startTime = millis();
 	unsigned long processTime;
 	int lengthMessage;
@@ -116,7 +117,7 @@ int DynamixelClass::read_error(void)
 }
 
 //General function to read the status package from the servo
-int DynamixelClass::read_information(void)
+int DynamixelClass::readInformation(void)
 {
 	unsigned long startTime = millis();
 	unsigned long processTime;
@@ -169,7 +170,7 @@ int DynamixelClass::read_information(void)
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-//Function to set the value of a command. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send
+//Function to set the value of a servo's address. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send
 int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParams){
 	uint8_t param_MSB, param_LSB;
 	param_MSB = param >> 8;
@@ -201,10 +202,10 @@ int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParam
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
-	return (read_information());
+	return (readInformation());
 }
 
-//Function to read the value of a command. noParams should be one or two, depending on how many bytes we need
+//Function to read the value of a servo's address. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need
 int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 
 	Checksum = (~(ID + LENGTH_READ + DMXL_READ_DATA + address + noParams))&0xFF;
@@ -221,10 +222,10 @@ int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
-	return (read_information());
+	return (readInformation());
 }
 
-//Initialize communication with the servos, with a user-defined pin for the data direction control
+//Initialize communication with the servos with a user-defined pin for the data direction control
 void DynamixelClass::begin(long baud, uint8_t directionPin)
 {
 	Direction_Pin = directionPin;
@@ -232,7 +233,7 @@ void DynamixelClass::begin(long baud, uint8_t directionPin)
 	beginCom(baud);
 }
 
-//Initialize communication with the servos, with a pre-defined pin (D15) for the data direction control
+//Initialize communication with the servos with a pre-defined pin (D15) for the data direction control
 void DynamixelClass::begin(long baud)
 {
 	setDPin(Direction_Pin, OUTPUT);
@@ -245,6 +246,7 @@ void DynamixelClass::end()
 	endCom();
 }
 
+//Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
 int DynamixelClass::reset(uint8_t ID){
 	Checksum = (~(ID + DMXL_RESET_LENGTH + DMXL_RESET))&0xFF;
 
@@ -261,6 +263,7 @@ int DynamixelClass::reset(uint8_t ID){
   return (read_error());
 }
 
+//Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
 int DynamixelClass::ping(uint8_t ID){
 	Checksum = (~(ID + DMXL_READ_DATA + DMXL_PING))&0xFF;
 
@@ -277,6 +280,7 @@ int DynamixelClass::ping(uint8_t ID){
   return (read_error());
 }
 
+//Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
 void DynamixelClass::action(){
 	switchCom(Direction_Pin,Tx_MODE);
     sendData(DMXL_START);                // Send Instructions over Serial
@@ -498,6 +502,7 @@ int DynamixelClass::move(uint8_t ID, int Position){
 	return(sendWord(ID, RAM_GOAL_POSITION_L, Position, TWO_BYTES));
 }
 
+//Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
 int DynamixelClass::moveSpeed(uint8_t ID, int Position, int Speed){
     char Position_H,Position_L,Speed_H,Speed_L;
     Position_H = Position >> 8;
