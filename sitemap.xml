@@ -42,6 +42,34 @@
     
 
     
+        
+    <url>
+     <loc>/examples/example1/</loc>
+     <lastmod>2017-04-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>/examples/example2/</loc>
+     <lastmod>2017-04-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>/examples/example3/</loc>
+     <lastmod>2017-04-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>/examples/tests/</loc>
+     <lastmod>2017-04-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    
+
+    
     <url>
      <loc>/about/</loc>
      <lastmod>2017-04-13</lastmod>

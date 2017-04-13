@@ -71,15 +71,19 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#source-code">Source code</a></li>
+                <li class="toctree-l3"><a href="#how-to-use-the-library">How to use the library</a></li>
                 
-                    <li><a class="toctree-l4" href="#basic-functions">Basic functions</a></li>
+            
+                <li class="toctree-l3"><a href="#basic-functions">Basic functions</a></li>
                 
-                    <li><a class="toctree-l4" href="#functions-related-to-the-eeprom-area-of-the-servos">Functions related to the EEPROM area of the servos</a></li>
+            
+                <li class="toctree-l3"><a href="#functions-related-to-the-eeprom-area-of-the-servos">Functions related to the EEPROM area of the servos</a></li>
                 
-                    <li><a class="toctree-l4" href="#functions-related-to-the-ram-area-of-the-servos">Functions related to the RAM area of the servos</a></li>
+            
+                <li class="toctree-l3"><a href="#functions-related-to-the-ram-area-of-the-servos">Functions related to the RAM area of the servos</a></li>
                 
-                    <li><a class="toctree-l4" href="#custom-functions">Custom Functions</a></li>
+            
+                <li class="toctree-l3"><a href="#custom-functions">Custom Functions</a></li>
                 
             
             </ul>
@@ -105,6 +109,42 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../hardware/Duo_Rs485_shield/">Duo RS-485 Shield</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Examples and Tests</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../examples/example1/">Example 1</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../examples/example2/">Example 2</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../examples/example3/">Example 3</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../examples/tests/">Tests</a>
         
     </li>
 
@@ -155,7 +195,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="source-code">Source code</h1>
+                <h2 id="how-to-use-the-library">How to use the library</h2>
 <p>The <strong>DuoDMXL</strong> library has to be included in your code:</p>
 <pre><code class="cpp">#include &lt;DuoDMXL.h&gt;
 </code></pre>
@@ -333,7 +373,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 <tr>
 <td align="left">Parameters</td>
-<td align="left">long baud: Desired baudrate for communication with the servos. For MX-64AR the default baudrate is 57600kbps</td>
+<td align="left">long baud: Desired baudrate for communication with the servos. For MX-64AR the default baudrate is 1Mbps (if I remember correctly)</td>
 </tr>
 <tr>
 <td align="left"></td>
@@ -553,7 +593,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 <tbody>
 <tr>
 <td align="left">Description</td>
-<td align="left">Function to set baudrate based on the manual's table. EEPROM Address 4(0x04). This is a more precise value. For example, for communication at 57600 kbps use '34'.</td>
+<td align="left">Function to set baudrate based on the manual's table. EEPROM Address 4(0x04). This is a more precise value. For example, for communication at 57600 bps use '34'.</td>
 </tr>
 <tr>
 <td align="left">Notation</td>
