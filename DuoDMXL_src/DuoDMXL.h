@@ -162,7 +162,7 @@ class DynamixelClass {
 		int data;
 
 		int read_error(void);
-		int read_information(void);
+		int readInformation(void);
 
 	public:
 
