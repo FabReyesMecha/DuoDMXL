@@ -123,6 +123,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../examples/example0/">Example 0</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../examples/example1/">Example 1</a>
         
     </li>
@@ -138,6 +145,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../examples/example3/">Example 3</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../examples/example4/">Example 4</a>
         
     </li>
 
@@ -196,6 +210,27 @@
             <div class="section">
               
                 <h2 id="how-to-use-the-library">How to use the library</h2>
+<p>First, copy the source files into your Arduino libraries folder. You can find more instructions on the web.
+Your folder structure should look similar to this:</p>
+<pre><code>../Arduino
+    libraries/
+        ..
+        DuoDMXL/
+            examples/
+                ..
+            copying.lesser.txt
+            DuoDMXL.cpp
+            DuoDMXL.h
+            keywords.txt
+            library.properties
+            license.txt
+        ..
+</code></pre>
+
+<p>If your folder structure is correct, you can find the library in the Arduino IDE in the section <code>Sketch-&gt;Include Library-&gt; DuoDMXL</code>:</p>
+<p><img alt="library_include.png" src="../../img/library_include.png" title="include library" /></p>
+<p>and you can find the examples in <code>File-&gt;Examples-&gt;DuoDMXL</code></p>
+<p><img alt="library_examples.png" src="../../img/library_examples.png" title="examples" /></p>
 <p>The <strong>DuoDMXL</strong> library has to be included in your code:</p>
 <pre><code class="cpp">#include &lt;DuoDMXL.h&gt;
 </code></pre>
@@ -221,7 +256,7 @@ They deal with low-level communication and are called by other functions.</p>
 <tbody>
 <tr>
 <td align="left">Description</td>
-<td align="left">General function to read the status package from a servo. It then extracts the error (in any) or desired data (for example, if the current positon of a servo was requested)</td>
+<td align="left">General function to read the status package from a servo. It then extracts the error (if any) or desired data (for example, if the current positon of a servo was requested)</td>
 </tr>
 <tr>
 <td align="left">Notation</td>
@@ -319,40 +354,6 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </code></pre>
 
 <p>This should make it easier for the user to write custom functions.</p>
-<table>
-<thead>
-<tr>
-<th align="left">Information</th>
-<th align="left"></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="left">Description</td>
-<td align="left"></td>
-</tr>
-<tr>
-<td align="left">Notation</td>
-<td align="left"></td>
-</tr>
-<tr>
-<td align="left">Parameters</td>
-<td align="left"></td>
-</tr>
-<tr>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr>
-<td align="left">Returns</td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
 <h2 id="functions-related-to-the-eeprom-area-of-the-servos">Functions related to the EEPROM area of the servos</h2>
 <p><code>void DynamixelClass::begin(long baud, uint8_t directionPin)</code></p>
 <table>

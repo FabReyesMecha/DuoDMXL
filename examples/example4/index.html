@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Example 3 - DuoDMXL</title>
+  <title>Example 4 - DuoDMXL</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,9 +17,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Example 3";
-    var mkdocs_page_input_path = "examples\\example3.md";
-    var mkdocs_page_url = "/examples/example3/";
+    var mkdocs_page_name = "Example 4";
+    var mkdocs_page_input_path = "examples\\example4.md";
+    var mkdocs_page_url = "/examples/example4/";
   </script>
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
@@ -124,22 +124,22 @@
 
         
             
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Example 3</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#example-3-functions-related-to-torque-mode">Example 3 - Functions related to torque mode</a></li>
-                
-            
-            </ul>
+    <li class="toctree-l1 ">
+        <a class="" href="../example3/">Example 3</a>
         
     </li>
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../example4/">Example 4</a>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Example 4</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#example-4-finding-your-servo">Example 4 - Finding your servo</a></li>
+                
+            
+            </ul>
         
     </li>
 
@@ -187,7 +187,7 @@
         
       
     
-    <li>Example 3</li>
+    <li>Example 4</li>
     <li class="wy-breadcrumbs-aside">
       
     </li>
@@ -197,9 +197,12 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="example-3-functions-related-to-torque-mode">Example 3 - Functions related to torque mode</h1>
-<p>In this example, the servo's torque mode is enabled. Also the torque limit is set.
-A goal torque is then sent to the motor while at the same time we obtian the actual value of the current of the servo.</p>
+                <h1 id="example-4-finding-your-servo">Example 4 - Finding your servo</h1>
+<p>If by any chance you don't remember the ID of your servo or the correct baudrate to communicate with it, then the servo is useless.
+However, with this function you can find it (connect only one servo to the bus).
+The servo ID and the baudrate it uses to communicate will be printed on the serial monitor.
+The baudrate value will be an integer [0,255].
+Refer to the <a href="http://support.robotis.com/en/">ROBOTIS manual</a> for its equivalent in bps.</p>
 <pre><code class="cpp">/*
  * Copyright (c) 2016 Fabian Eugenio Reyes Pinner (Fabian Reyes)
  *
@@ -217,10 +220,9 @@ A goal torque is then sent to the motor while at the same time we obtian the act
  */
 
  /*
-  * In this example, we will turn on torque control and use it. Notice that, if there is no resistance to the servo motion, it will simply rotate
-  * trying to achieve the desired torque.
-  *
-  * This example introduces the functions Dynamixel.setTorqueLimit(), Dynamixel.torqueControl(), Dynamixel.setGoalTorque(), and Dynamixel.readCurrent()
+  * In this example, we will try to find a servo without knowing its ID nor the correct baudrate for communication.
+  * In this case, you do not neet to use Dynamixel.begin() to start communication.
+  * The results of the search will be printed onto the Serial Monitor.
   */
 
 SYSTEM_MODE(MANUAL);  //do not connect to the cloud. Communicate with the servo immediately
@@ -230,107 +232,29 @@ SYSTEM_MODE(MANUAL);  //do not connect to the cloud. Communicate with the servo 
 
 int led1 = D7;      //onboard LED
 int dataPin = D15;  //Pin used to control Data flow between the DUO and Dynamixel. By default we use the D15 Pin which is closest to the TX and RX pins
-int errorMove, servoPos, servoCurrent, servoTorqueEnableStatus, gainD, gainI, gainP;
-int servoID = 1;
-long baud = 57600;  //Baudrate for communication with Dynamixel servos (Depending of your servo, this may be 1Mbps by default)
 
 void setup() {
   pinMode(led1, OUTPUT);                  //prepare the on-board LED
 
   Serial.begin(115200);                   //Start communication with the PC;
-  Dynamixel.begin(baud, dataPin);         //Initialize the servo at Baud Rate (baud) and Pin Control (dataPin)
 
   delay(1000);                            //Let's wait a little bit
 
-  Dynamixel.setTorqueLimit(servoID, 1023);  //Set the torque limit to the maximum value possible
-  Dynamixel.torqueControl(servoID, true);   //Enable torque control
 }
 
 void loop() {
   digitalWrite(led1, HIGH);               //turn on on-board LED to show that the loop has started
 
-  int actualCurrent;
-
-  //Ask for 0% torque
-  Dynamixel.setGoalTorque(servoID, 0);
-  actualCurrent = Dynamixel.readCurrent(servoID);
-  Serial.print(&quot;The actual current is: &quot;);
-  Serial.println(actualCurrent);
-  delay(1000);                            //wait one second
-
-  //Ask for 1% torque (Counter-clockwise)
-  Dynamixel.setGoalTorque(servoID, 10);
-  actualCurrent = Dynamixel.readCurrent(servoID);
-  Serial.print(&quot;The actual current is: &quot;);
-  Serial.println(actualCurrent);
-  delay(1000);                            //wait one second
-
-  //Ask for 5% of torque (Counter-clockwise)
-  Dynamixel.setGoalTorque(servoID, 51);
-  actualCurrent = Dynamixel.readCurrent(servoID);
-  Serial.print(&quot;The actual current is: &quot;);
-  Serial.println(actualCurrent);
-  delay(1000);                            //wait one second
-
-  //Ask for 10% of torque (Counter-clockwise)
-  Dynamixel.setGoalTorque(servoID, 102);
-  actualCurrent = Dynamixel.readCurrent(servoID);
-  Serial.print(&quot;The actual current is: &quot;);
-  Serial.println(actualCurrent);
-  delay(1000);                            //wait one second
+  Dynamixel.findServo(dataPin);           //To start searching for the servo, specify the pinthat controls the direction of communication. By default D15 in Duo (Redbear)
 
   digitalWrite(led1, LOW);
 }
 </code></pre>
 
-<p>The output on the terminal looks like this:</p>
-<p>Next I show the minimal functional code to make the example work without output to the terminal. Start by including the library into your code:</p>
-<pre><code class="cpp">#include &lt;DuoDMXL.h&gt;
-</code></pre>
-
-<p>The minimal code for setting up communication and other information in this example is:</p>
-<pre><code class="cpp">int dataPin = D15;  //Pin used to control Data flow between the DUO and Dynamixel. By default we use the D15 Pin which is closest to the TX and RX pins
-int errorMove, servoPos, servoCurrent, servoTorqueEnableStatus, gainD, gainI, gainP;
-int servoID = 1;
-long baud = 57600;  //Baudrate for communication with Dynamixel servos (Depending of your servo, this may be 1Mbps by default)
-
-void setup() {
-  Serial.begin(115200);                   //Start communication with the PC;
-  Dynamixel.begin(baud, dataPin);         //Initialize the servo at Baud Rate (baud) and Pin Control (dataPin)
-
-  delay(1000);                            //Let's wait a little bit
-
-  Dynamixel.setTorqueLimit(servoID, 1023);  //Set the torque limit to the maximum value possible
-  Dynamixel.torqueControl(servoID, true);   //Enable torque control
-}
-</code></pre>
-
-<p>Finally, set a goal torque. If the motor is not constrained in any way it will start to move continously, trying to reach the desired torque (current).</p>
-<pre><code class="cpp">void loop() {
-  int actualCurrent;
-
-  //Ask for 0% torque
-  Dynamixel.setGoalTorque(servoID, 0);
-  actualCurrent = Dynamixel.readCurrent(servoID);
-  delay(1000);                            //wait one second
-
-  //Ask for 1% torque (Counter-clockwise)
-  Dynamixel.setGoalTorque(servoID, 10);
-  actualCurrent = Dynamixel.readCurrent(servoID);
-  delay(1000);                            //wait one second
-
-  //Ask for 5% of torque (Counter-clockwise)
-  Dynamixel.setGoalTorque(servoID, 51);
-  actualCurrent = Dynamixel.readCurrent(servoID);
-  delay(1000);                            //wait one second
-
-  //Ask for 10% of torque (Counter-clockwise)
-  Dynamixel.setGoalTorque(servoID, 102);
-  actualCurrent = Dynamixel.readCurrent(servoID);
-  delay(1000);                            //wait one second
-}
-
-</code></pre>
+<p>The output of the terminal will look like this:</p>
+<p><img alt="example_4_monitor.png" src="../../img/example_4_monitor.png" title="example 4" /></p>
+<p>The servo found has ID <code>2</code> and the baudrate (table value) is '34'.
+According to the Robotis manual, this corresponds to 57142.9 bps (often rounded up to 57600 bps).</p>
               
             </div>
           </div>
@@ -338,10 +262,10 @@ void setup() {
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../example4/" class="btn btn-neutral float-right" title="Example 4">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../tests/" class="btn btn-neutral float-right" title="Tests">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../example2/" class="btn btn-neutral" title="Example 2"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../example3/" class="btn btn-neutral" title="Example 3"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -367,10 +291,10 @@ void setup() {
     <span class="rst-current-version" data-toggle="rst-current-version">
       
       
-        <span><a href="../example2/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../example3/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../example4/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../tests/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

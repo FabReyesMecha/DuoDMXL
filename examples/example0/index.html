@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Overview of the library - DuoDMXL</title>
+  <title>Example 0 - DuoDMXL</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,9 +17,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Overview of the library";
-    var mkdocs_page_input_path = "source\\overview.md";
-    var mkdocs_page_url = "/source/overview/";
+    var mkdocs_page_name = "Example 0";
+    var mkdocs_page_input_path = "examples\\example0.md";
+    var mkdocs_page_url = "/examples/example0/";
   </script>
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
@@ -59,24 +59,15 @@
 
         
             
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Overview of the library</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#duodmxl-code-overview">DuoDMXL Code Overview</a></li>
-                
-                    <li><a class="toctree-l4" href="#general-idea-for-communication-between-microcontroller-and-dynamixel-servos">General idea for communication between microcontroller and Dynamixel servos</a></li>
-                
-            
-            </ul>
+    <li class="toctree-l1 ">
+        <a class="" href="../../source/overview/">Overview of the library</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../source/">Code description</a>
+        <a class="" href="../../source/source/">Code description</a>
         
     </li>
 
@@ -112,43 +103,50 @@
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../examples/example0/">Example 0</a>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Example 0</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#example-0-setting-the-id-of-your-servo">Example 0 - Setting the ID of your servo</a></li>
+                
+            
+            </ul>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../examples/example1/">Example 1</a>
+        <a class="" href="../example1/">Example 1</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../examples/example2/">Example 2</a>
+        <a class="" href="../example2/">Example 2</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../examples/example3/">Example 3</a>
+        <a class="" href="../example3/">Example 3</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../examples/example4/">Example 4</a>
+        <a class="" href="../example4/">Example 4</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../examples/tests/">Tests</a>
+        <a class="" href="../tests/">Tests</a>
         
     </li>
 
@@ -185,11 +183,11 @@
     
       
         
-          <li>Source Code &raquo;</li>
+          <li>Examples and Tests &raquo;</li>
         
       
     
-    <li>Overview of the library</li>
+    <li>Example 0</li>
     <li class="wy-breadcrumbs-aside">
       
     </li>
@@ -199,14 +197,62 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="duodmxl-code-overview">DuoDMXL Code Overview</h1>
-<h2 id="general-idea-for-communication-between-microcontroller-and-dynamixel-servos">General idea for communication between microcontroller and Dynamixel servos</h2>
-<p>Communication is done through a specific protocol for communication which is embedded in the Dynamixel servomotors. The detailed description can be found in <a href="http://support.robotis.com/en/">ROBOTIS manual</a>. Specifically, to the <strong>Communication 1.0</strong> protocol. The idea is that the microcontroller has to send a <em>package</em> with a specific structure (In the Robotis manual they call this <strong>instruction packet</strong>). Then the servo responds back with another series of bytes, structured in a similar manner. The <em>response</em> (or <strong>status packet</strong> in Robotis documentation) contains an error report and additional data if it was requested (e.g., we asked for the angle of the servo).</p>
-<p>The package sent to the servo and the response obtained must have the following structure:</p>
-<p><img alt="protocol" src="../../img/communicationProtocol.png" title="Communication Protocol" />
-<em>Overview of the communication protocol.</em></p>
-<p>Both the <em>package</em> and <em>response</em> always have two bytes as <strong>header</strong> which must be <strong>0xFF</strong> (or 255 as base 10 integer). The <strong>instruction</strong> byte refers to the action to perform (write, read, etc.). <strong>Params</strong> is a series of bytes including the address that will be accesed on the servomotor and additional information. Do not worry, <strong>DuoDMXL</strong> takes care of parsing the package correctly and sending it.</p>
-<p>The minimal response obtained for each exhange with the servo will be of six bytes (no data requested). Although the response can be disabled altogether, <strong>DuoDMXL</strong> assumes that this response is enabled always. In other words, do not turn it off unless you are willing to tweak the source code.</p>
+                <h1 id="example-0-setting-the-id-of-your-servo">Example 0 - Setting the ID of your servo</h1>
+<p>In this example, a servo with <code>ID = 1</code> will be change to <code>2</code>. You will need to do this often with your servos since all come with the default ID of <code>1</code>.
+Make sure only one servo is connected to the bus.</p>
+<pre><code class="cpp">/*
+ * Copyright (c) 2016 Fabian Eugenio Reyes Pinner (Fabian Reyes)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;),
+ * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ */
+
+ /*
+  * In this example, we will change the ID of the servo from '1' to '2'. Be sure that only one servo is connected.
+  */
+
+SYSTEM_MODE(MANUAL);  //do not connect to the cloud. Communicate with the servo immediately
+
+//The DuoDMXL library allows communication with the servo
+#include &lt;DuoDMXL.h&gt;
+
+int dataPin = D15;  //Pin used to control Data flow between the DUO and Dynamixel. By default we use the D15 Pin which is closes to the TX and RX pins
+int servoID = 1;
+int newID = 2;
+long baud = 57600;  //Baudrate for communication with Dynamixel servos (Depending of your servo, this may be 1Mbps by default)
+
+void setup() {
+
+  Serial.begin(115200);               //Start communication with the PC;
+  Dynamixel.begin(baud, dataPin);     // Initialize the servo at Baud Rate (baud) and Pin Control (dataPin)
+
+  delay(1000);                        //Let's wait a little bit
+
+  Dynamixel.setID(servoID, newID);
+
+}
+
+void loop() {
+  //Do whatever you want with the servo now. Remember the servo has the new ID
+
+  Dynamixel.move(newID, 0);
+
+  delay(1000);
+
+  Dynamixel.move(newID, 4095);
+
+  delay(1000);
+}
+</code></pre>
               
             </div>
           </div>
@@ -214,10 +260,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../source/" class="btn btn-neutral float-right" title="Code description">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../example1/" class="btn btn-neutral float-right" title="Example 1">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../.." class="btn btn-neutral" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../hardware/Duo_Rs485_shield/" class="btn btn-neutral" title="Duo RS-485 Shield"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -243,10 +289,10 @@
     <span class="rst-current-version" data-toggle="rst-current-version">
       
       
-        <span><a href="../.." style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../hardware/Duo_Rs485_shield/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../source/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../example1/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
