@@ -9,10 +9,11 @@ Initially, the library was based on [Savage Electronics Library](http://savageel
 
 The main difference is that communication is delegated to the basic functions:
 
-1. `sendWord(uint8_t ID, uint8_t address, int param, int noParams)` which sends a package to the servomotors.
-2. `read_information(void)` which reads a response from the servomotors. It could be requested information or a simple no-error response.
+1. `sendWord()` which writes a value to a register of the servo.
+2. `readWord()` which reads the current value of a register of the servo.
+3. `readInformation()` which reads a response (set of bytes) from the servomotors. It could be requested information or a simple no-error response.
 
-and all other functions actually call these functions with the appropiate parameters. This not only decreases the code size, but also allows for easier creation of user-defined functions.
+and all other functions call these basic functions with the appropiate parameters. This not only decreases the code size, but also allows for easier creation of user-defined functions.
 
 The Dynamixel servos have their own protocol for communication, which you can check in the communication section of the [ROBOTIS manual](http://support.robotis.com/en/). Depending on the servos you are communicating with, you need to transform the half-duplex UART signal of the Duo (or Photon) unto a TTL signal for some servos (e.g., MX-64T) which can be done with a tri-state buffer, or use a RS-485 transceiver for servos that use RS-485 bus (e.g., MX-64AR).
 
