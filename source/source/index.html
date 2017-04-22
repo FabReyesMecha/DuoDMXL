@@ -346,7 +346,7 @@ They deal with low-level communication and are called by other functions.</p>
 </tr>
 </tbody>
 </table>
-<p>For example, to set change the ID of a servo, a new ID should be written to the register's address 0x03.
+<p>For example, to change the ID of a servo, a new ID should be written to the register's address 0x03.
 This can be accomplished quickly and cleanly with the following code:</p>
 <pre><code class="cpp">int DynamixelClass::setID(uint8_t ID, uint8_t newID){
     return(sendWord(ID, EEPROM_ID, newID, ONE_BYTE));
@@ -1186,7 +1186,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 <tr>
 <td align="left"></td>
-<td align="left">uint8_t SALARM: Check the documentation. Depending on the value sent, the servo will output a 0% torque if an alarm is activated</td>
+<td align="left">uint8_t SALARM: Check the documentation. Depending on the value sent, the servo will output a 0% torque if an alarm is activated. By default the value is 36 (0x24) which in binary is '0010 0100', meaning overload+overheating error.</td>
 </tr>
 <tr>
 <td align="left">Returns</td>
@@ -1194,6 +1194,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 </tbody>
 </table>
+<p><img alt="errors.png" src="../../img/errors.png" title="possible errors" /></p>
 <p><code>int DynamixelClass::readShutdownAlarm(uint8_t ID)</code></p>
 <table>
 <thead>
@@ -1798,10 +1799,11 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 <tr>
 <td align="left">Returns</td>
-<td align="left">The actual speed of the servo</td>
+<td align="left">The actual speed of the servo (possible values [0,2047]). [0,1023] correspond to CCW and [1024,2047] to CW speeds, respectively. In other words, the magnitude is given by the first nine bits [0,1023] and the tenth bit denotes the direction.</td>
 </tr>
 </tbody>
 </table>
+<p><img alt="present_speed.png" src="../../img/present_speed.png" title="possible speed" /></p>
 <p><code>int DynamixelClass::readLoad(uint8_t ID)</code></p>
 <table>
 <thead>
