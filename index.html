@@ -58,6 +58,8 @@
                 
                     <li><a class="toctree-l4" href="#sections">Sections</a></li>
                 
+                    <li><a class="toctree-l4" href="#log">Log</a></li>
+                
             
             </ul>
         
@@ -200,7 +202,7 @@
                 <h1 id="duodmxl">DuoDMXL</h1>
 <h2 id="libary-for-servo-control-with-duo-redbear-or-photon-particle">Libary for servo control with Duo (Redbear) or Photon (Particle)</h2>
 <p>For the source code visit <a href="https://github.com/FabReyesMecha/DuoDMXL">github.com/FabReyesMecha/DuoDMXL</a>.</p>
-<p>DuoDMXL is a library for controlling Dynamixel servos using a Duo (or Photon) as main microcontroller. This library allows the user to write or read all of the possible registers in the servomotors. Specifically, it is meant for MX-64 servomotors. Other models like AX have different EEPROM registers, but the library can be adapted.</p>
+<p>DuoDMXL is a library for controlling Dynamixel servos using a <a href="https://github.com/redbear/Duo">Duo</a> (or Photon) as main microcontroller. This library allows the user to write or read all of the possible registers in the servomotors. Specifically, it is meant for MX-64 servomotors. Other models like AX have different EEPROM registers, but the library can be adapted.</p>
 <p>Initially, the library was based on <a href="http://savageelectronics.blogspot.jp/2011/01/arduino-y-dynamixel-ax-12.html">Savage Electronics Library</a>, but eventually started to diverge from the original. The original library used timers for several functions, which would lead to troubles using other microcontrollers, different than the Arduino UNO.</p>
 <p>The main difference is that communication is delegated to the basic functions:</p>
 <ol>
@@ -225,7 +227,7 @@ Pin D15 is used for data flow control by default, buy you can choose other pin i
 </ul>
 </li>
 <li>Software dependencies:<ul>
-<li>None (as of version 0.2.2)</li>
+<li>None (as of version 0.3)</li>
 </ul>
 </li>
 </ol>
@@ -235,7 +237,7 @@ This library is mainly intended to be used with the Arduino IDE. Just download t
 <table>
 <thead>
 <tr>
-<th align="left">Sections</th>
+<th align="left">Section</th>
 <th align="left">Description</th>
 </tr>
 </thead>
@@ -258,6 +260,10 @@ This library is mainly intended to be used with the Arduino IDE. Just download t
 </tr>
 </tbody>
 </table>
+<h2 id="log">Log</h2>
+<ul>
+<li>[2017-05-04]: Uploaded <strong>DuoDMXL</strong> v.0.3</li>
+</ul>
               
             </div>
           </div>
@@ -304,5 +310,5 @@ This library is mainly intended to be used with the Arduino IDE. Just download t
 
 <!--
 MkDocs version : 0.16.1
-Build Date UTC : 2017-04-23 09:47:58
+Build Date UTC : 2017-05-04 10:01:13
 -->

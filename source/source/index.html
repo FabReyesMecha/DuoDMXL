@@ -1014,6 +1014,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tbody>
 </table>
 <p><code>int DynamixelClass::setSRL(uint8_t ID, uint8_t SRL)</code></p>
+<p>Improved functionality in <strong>DuoDMXL</strong> v.0.3.</p>
 <table>
 <thead>
 <tr>
@@ -1036,7 +1037,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 <tr>
 <td align="left"></td>
-<td align="left">uint8_t SRL: 0, 1, or 2 for 'no return against all commands', 'return only for the READ command', 'Return for all commands', respectively. Currently, <strong>DuoDMXL</strong> always expects a response so do not change this address.</td>
+<td align="left">uint8_t SRL: 0, 1, or 2 for 'no return against all commands', 'return only for the READ command', or 'Return for all commands', respectively.</td>
 </tr>
 <tr>
 <td align="left">Returns</td>
@@ -1044,6 +1045,17 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 </tbody>
 </table>
+<p>As of <strong>DuoDMXL</strong> v.0.3 the user can choose any SRL.
+However, <strong>DuoDMXL</strong> assumes on reset that all servos have the same SRL and ALL communications return a package (i.e., <code>SRL=2</code>).
+If you changed the value of SRL on a previous session, there may be problems with the communication, since the value of SRL is written in the EEPROM memory of the servos.
+If you are having troubles with communication use:</p>
+<pre><code class="cpp">    Dynamixel.begin(baud, dataPin);
+    delay(500);
+    Dynamixel.setSRL(254, 2);
+</code></pre>
+
+<p>at the beginning of your program to set all servos to 'Return for all commands'.</p>
+<p><strong>NOTE</strong>: <code>254</code> is the broadcast ID. Any command is sent to all servos.</p>
 <p><code>int DynamixelClass::readSRL(uint8_t ID)</code></p>
 <table>
 <thead>
@@ -2399,6 +2411,62 @@ Connect only one servo to find it.</p>
 <tr>
 <td align="left">Returns</td>
 <td align="left">Nothing. Check the output in the terminal</td>
+</tr>
+</tbody>
+</table>
+<p><code>void DynamixelClass::changeTimeOut(uint8_t newTimeOut)</code></p>
+<p>Introduced in <strong>DuoDMXL</strong> v.0.3.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Information</th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Description</td>
+<td align="left">Change time out period (waiting time for status package). Unit is [ms]. The maximum value is 255. The default value is 50[ms]</td>
+</tr>
+<tr>
+<td align="left">Notation</td>
+<td align="left">Dynamixel.changeTimeOut(newTimeOut)</td>
+</tr>
+<tr>
+<td align="left">Parameters</td>
+<td align="left">uint8_t newTimeOut: New time out period</td>
+</tr>
+<tr>
+<td align="left">Returns</td>
+<td align="left">Nothing</td>
+</tr>
+</tbody>
+</table>
+<p><code>void DynamixelClass::changeCoolDown(uint16_t newCoolDown)</code></p>
+<p>Introduced in <strong>DuoDMXL</strong> v.0.3.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Information</th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Description</td>
+<td align="left">Change cool down period (time between sending commands). Unit is [ms]. The maximum value is 65,535 (i.e., 65.535 seconds). The default value is 0[ms]</td>
+</tr>
+<tr>
+<td align="left">Notation</td>
+<td align="left">Dynamixel.changeCoolDown(newCoolDown)</td>
+</tr>
+<tr>
+<td align="left">Parameters</td>
+<td align="left">uint16_t newCoolDown: New cool down period</td>
+</tr>
+<tr>
+<td align="left">Returns</td>
+<td align="left">Nothing</td>
 </tr>
 </tbody>
 </table>
