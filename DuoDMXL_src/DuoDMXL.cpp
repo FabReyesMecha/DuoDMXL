@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.0.2.2
+DuoDMXL v.0.3
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -37,12 +37,14 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 Log:
 
-2017-04-13: v.0.2.2 Added extra comments.
-					changed name read_information() to readInformation()
-2016-12-22:	v.0.2.1	Modified int to unsigned long in reading serial timeout
-					Marked constants specific to MX-64 and AX-12
-2016-12-21:	v.0.2
-2016-06-01:	v.0.1
+2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
+					   	TIME_OUT and COOL_DOWN are accessible to the user
+2017-04-13: 	v.0.2.2	Added extra comments.
+					   	changed name read_information() to readInformation()
+2016-12-22:		v0.2.1	Modified int to unsigned long in reading serial timeout
+					   	Marked constants specific to MX-64 and AX-12
+2016-12-21:		v.0.2
+2016-06-01:		v.0.1
 
  TODO:
 
@@ -82,7 +84,7 @@ Log:
 // Private Methods //////////////////////////////////////////////////////////////
 
 //Read response from the servo and return the error (if any)
-//Function inherited from Savage's library. Deprecated by readInformation()
+//Function inherited from Savage's library. DEPRECATED by readInformation()
 int DynamixelClass::read_error(void)
 {
 	unsigned long startTime = millis();
@@ -113,10 +115,11 @@ int DynamixelClass::read_error(void)
 	}
 
 	delay(COOL_DOWN);
-	return (-1);											 			//No servo Response
+	return(-1);											 				//No servo Response
 }
 
 //General function to read the status package from the servo
+//TODO: Add timer to all 'while( !availableData() ){}'
 int DynamixelClass::readInformation(void)
 {
 	unsigned long startTime = millis();
@@ -126,6 +129,7 @@ int DynamixelClass::readInformation(void)
 	//Do nothing until we have the start bytes, ID, and length of the message
 	while( (availableData() <=4) && (((processTime=(int) millis()) - startTime) <= TIME_OUT) ){}
 
+	//Even if there was a TIME_OUT, if there are more than 4 bytes in the buffer, read them
 	while (availableData() > 0){
 		Incoming_Byte = readData();										//First byte of the header
 		if ( (Incoming_Byte == 255) && (peekData() == 255) ){
@@ -153,7 +157,7 @@ int DynamixelClass::readInformation(void)
 				data = data + dataLSB;
 			}
 			else{
-				data = -2;												//The length was not correct or there was some problem
+				data = LENGTH_INCORRECT;								//The length was not correct or there was some problem
 			}
 
 			while( !availableData() ){}
@@ -164,8 +168,9 @@ int DynamixelClass::readInformation(void)
 		}
 	}
 
+	//If there was a TIME_OUT and not enough bytes, there was an error in communication
 	delay(COOL_DOWN);
-	return (-1);											 			// No servo Response
+	return (NO_SERVO_RESPONSE);											// No servo Response
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -202,7 +207,14 @@ int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParam
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
-	return (readInformation());
+	//Depending on the current value of statusReturnLevel read or skip the status package
+	//if writting a word, then we only expect a package when statusReturnLevel is RETURN_ALL or PING was used (PING not currently supported)
+	if(statusReturnLevel == RETURN_ALL){
+		return(readInformation());
+	}
+	else{
+		return(NO_ERROR);
+	}
 }
 
 //Function to read the value of a servo's address. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need
@@ -222,31 +234,36 @@ int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
-	return (readInformation());
+	//Depending on the current value of statusReturnLevel read or skip the status package
+	//if reading a word, then we only expect a package when statusReturnLevel is RETURN_ALL or RETURN_READ
+	if(statusReturnLevel == RETURN_NONE){
+		return(NO_ERROR);
+	}
+	else{
+		return(readInformation());
+	}
 }
 
 //Initialize communication with the servos with a user-defined pin for the data direction control
-void DynamixelClass::begin(long baud, uint8_t directionPin)
-{
+//By default, always set status return level as RETURN_ALL
+void DynamixelClass::begin(long baud, uint8_t directionPin){
 	Direction_Pin = directionPin;
 	setDPin(Direction_Pin, OUTPUT);
 	beginCom(baud);
 }
 
 //Initialize communication with the servos with a pre-defined pin (D15) for the data direction control
-void DynamixelClass::begin(long baud)
-{
+void DynamixelClass::begin(long baud){
 	setDPin(Direction_Pin, OUTPUT);
 	beginCom(baud);
 }
 
 //End communication
-void DynamixelClass::end()
-{
+void DynamixelClass::end(){
 	endCom();
 }
 
-//Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
+//Function inherited from Savage's library. NOT fully tested or supported by DuoDMXL yet
 int DynamixelClass::reset(uint8_t ID){
 	Checksum = (~(ID + DMXL_RESET_LENGTH + DMXL_RESET))&0xFF;
 
@@ -260,7 +277,7 @@ int DynamixelClass::reset(uint8_t ID){
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
-  return (read_error());
+	return (read_error());
 }
 
 //Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
@@ -400,9 +417,16 @@ int DynamixelClass::readMaxTorque(uint8_t ID){
 	return(readWord(ID, EEPROM_MAX_TORQUE_L, TWO_BYTES));
 }
 
-//Set the Status Return Level. EEPROM Address 16(0x10)
+//Set the Status Return Level. EEPROM Address 16(0x10).
+//DuoDMXL assumes that upon reset, all servos have RETURN_ALL. If the value was changed in a previos session, use setSRL(BROADCAST_ID, 2)
 int DynamixelClass::setSRL(uint8_t ID, uint8_t SRL){
-	return(sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE));
+
+	//Send the new desired status return level
+	int error = sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE);
+	//change the current value of statusReturnLevel
+	statusReturnLevel = SRL;
+
+	return(error);
 }
 
 //Read the Status Return Level value. EEPROM Address 16(0x10)
@@ -625,9 +649,10 @@ int DynamixelClass::setGoalAccel(uint8_t ID, uint8_t accel){
 	return(sendWord(ID, RAM_GOAL_ACCEL, accel, ONE_BYTE));
 }
 
-//CUSTOM FUNCTIONS
+//CUSTOM FUNCTIONS---------------------------------------------------------
 
 //Configure both ID and Baudrate of the servo
+//TODO: does the change in baudrate requieres a reset?
 void DynamixelClass::configureServo(uint8_t ID, uint8_t newID, long baud){
 	setID(ID, newID);
 	delay(10);
@@ -671,7 +696,7 @@ int DynamixelClass::findByBaudRate(long baudRate){
 		}
 	}
 
-	return(-1);																//Return error if nothing found
+	return(NO_SERVO_RESPONSE);												//Return error if nothing found
 }
 
 //Function to find the baudrate to communicate with the servo, if you have the correct ID. Assume begin() has NOT been called
@@ -690,10 +715,10 @@ int DynamixelClass::findByID(uint8_t id, uint8_t directionPin){
 		end();																//end communication
 	}
 
-	return(-1);																//If nothing found, return error
+	return(NO_SERVO_RESPONSE);												//If nothing found, return error
 }
 
-//FInd the servo without having any information. Assume begin() has NOT been called
+//Find the servo without having any information. Assume begin() has NOT been called
 void DynamixelClass::findServo(uint8_t directionPin){
 	int error;
 	long roundedBaudRate;
@@ -721,6 +746,16 @@ void DynamixelClass::findServo(uint8_t directionPin){
 	   }
 	   end();
 	 }
+}
+
+//Change time out period (waiting time for status package). Unit is [ms]. The maximum value is 255
+void DynamixelClass::changeTimeOut(uint8_t newTimeOut){
+	TIME_OUT = newTimeOut;
+}
+
+//Change cool down period (time between sending commands). Unit is [ms]. The maximum value is 65,535 (i.e., 65.535 seconds)
+void DynamixelClass::changeCoolDown(uint16_t newCoolDown){
+	COOL_DOWN = newCoolDown;
 }
 
 DynamixelClass Dynamixel;

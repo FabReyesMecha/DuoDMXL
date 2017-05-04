@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.0.2.2
+DuoDMXL v.0.3
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,7 +34,9 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
- 2017-04-13: v.0.2.2 	Added extra comments.
+ 2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
+ 						TIME_OUT and COOL_DOWN are accessible to the user
+ 2017-04-13: 	v.0.2.2	Added extra comments.
  						changed name read_information() to readInformation()
  2016-12-22:	v0.2.1	Modified int to unsigned long in reading serial timeout
  						Marked constants specific to MX-64 and AX-12
@@ -136,8 +138,7 @@ This program is free software: you can redistribute it and/or modify
 #define DMXL_ACTION_CHECKSUM				250
 #define BROADCAST_ID                		254
 #define DMXL_START                  		255
-#define TIME_OUT                    		50        	//[ms] Waiting time for the incomming data from servomotor
-#define COOL_DOWN							0			//cool down period (milliseconds) before sending another command to the dynamixel servomotor
+//#define TIME_OUT                    		50        	//[ms] Waiting time for the incomming data from servomotor
 #define Tx_MODE                     		1
 #define Rx_MODE                     		0
 
@@ -160,6 +161,17 @@ class DynamixelClass {
 		uint8_t dataLSB;
 		uint8_t dataMSB;
 		int data;
+
+		uint8_t statusReturnLevel = RETURN_ALL;			//Status return level. 2(default): Return for all commands. 1: Return only for the READ command. 0: No return (except PING)
+
+		//Error definitions. Use negative values.
+		static const int NO_ERROR = 0;
+		static const int NO_SERVO_RESPONSE = -1;
+		static const int LENGTH_INCORRECT = -2;
+
+		//Variables regarding performance of DuoDMXL
+		uint8_t TIME_OUT = 50;        					//Waiting time (milliseconds) for the incomming data from servomotor
+		uint16_t COOL_DOWN = 0;							//Cool down period (milliseconds) before sending another command to the dynamixel servomotor
 
 		int read_error(void);
 		int readInformation(void);
@@ -252,6 +264,8 @@ class DynamixelClass {
 		int findByBaudRate(long baudRate);
 		int findByID(uint8_t id, uint8_t directionPin);
 		void findServo(uint8_t directionPin);
+		void changeTimeOut(uint8_t newTimeOut);
+		void changeCoolDown(uint16_t newCoolDown);
 };
 
 extern DynamixelClass Dynamixel;
