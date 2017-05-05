@@ -28,11 +28,12 @@ Prerequisites:
 1. Hardware:
     * RS-485 transceiver or Tri-state buffer
 2. Software dependencies:
-    * None (as of version 0.2.1)
+    * None (as of version 1.0)
 
 Installation:
 This library is mainly intended to be used with the Arduino IDE. Just download the source code in *DuoDMXL_src/* directory and move it to a new directory *.../documents/Arduino/libraries/DuoDMXL/*. Next time you restart the Arduino IDE, the new library DuoDMXL will be detected automatically.
 
 ## Log:
 
-[2017-05-04] Uploaded **DuoDMXL** v.0.3 
+[2017-05-05] Stable release: **DuoDMXL** v1.0
+[2017-05-04] Uploaded **DuoDMXL** v0.3
