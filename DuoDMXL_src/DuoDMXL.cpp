@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.0.3
+DuoDMXL v.1.0
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -37,6 +37,8 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 Log:
 
+2017-05-05:		v.1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
+						User can change the baudrate in the same session, without reseting the microcontroller
 2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
 					   	TIME_OUT and COOL_DOWN are accessible to the user
 2017-04-13: 	v.0.2.2	Added extra comments.
@@ -123,15 +125,36 @@ int DynamixelClass::read_error(void)
 int DynamixelClass::readInformation(void)
 {
 	unsigned long startTime = millis();
-	unsigned long processTime;
-	int lengthMessage;
+	int processTime, lengthMessage;
 
+	_response_within_timeout = true;									//Reset flag
+
+	//DuoDMXL < v.1.0
 	//Do nothing until we have the start bytes, ID, and length of the message
-	while( (availableData() <=4) && (((processTime=(int) millis()) - startTime) <= TIME_OUT) ){}
+	//while( (availableData() <=4) && (((processTime=(int) millis()) - startTime) <= TIME_OUT) ){}
 
-	//Even if there was a TIME_OUT, if there are more than 4 bytes in the buffer, read them
-	while (availableData() > 0){
+	//This version works, but it is hard to read and may lead to errors
+	//Do nothing until we have the start bytes, ID, and length of the message
+	//while(  (availableData() <=4)  && (_response_within_timeout = (bool) (((processTime=(int) millis()) - startTime) <= TIME_OUT)) ){}
+
+	//DuoDMXL v.1.0
+	//Do nothing until we have the start bytes, ID, and length of the message. Even at 9600bps, it should take around 31.25[ms] for the four bytes to arrive
+	while(  (availableData() <=4)  &&  _response_within_timeout){
+		processTime = (int) millis();
+		processTime = processTime - startTime;							//time since this function started
+
+		_response_within_timeout = (bool) (processTime <= TIME_OUT);	//is the communication within the allowed time?
+	}
+
+	//Even if there was a TIME_OUT, if there are available bytes in the buffer, read them
+	//DuoDMXL < v.1.0
+	//while (availableData() > 0){
+
+	//Only proceed if there was no problem in the communication
+	while (availableData() > 0 && _response_within_timeout){
 		Incoming_Byte = readData();										//First byte of the header
+
+		//For now, DuoDMXL assumes there are no problems in the rest of the communication. TODO: put safeguard here
 		if ( (Incoming_Byte == 255) && (peekData() == 255) ){
 			readData();                                    				//Second byte of the header
 			readData();                                    				//Dynamixel ID
@@ -330,7 +353,8 @@ int DynamixelClass::readID(uint8_t ID){
 	return(readWord(ID, EEPROM_ID, ONE_BYTE));
 }
 
-//Function to set baudrate. EEPROM Address 4(0x04)
+//Function to set baudrate. EEPROM Address 4(0x04).
+//The baudrate change takes effect immediately. You need to use end() and begin() with the new baudrate
 int DynamixelClass::setBD(uint8_t ID, long baud){
 	uint8_t Baud_Rate = round((2000000.0/(float) baud) -1);
 
@@ -338,6 +362,7 @@ int DynamixelClass::setBD(uint8_t ID, long baud){
 }
 
 //Function to set baudrate based on the manual's table. EEPROM Address 4(0x04)
+//The baudrate change takes effect immediately. You need to use end() and begin() with the new baudrate
 int DynamixelClass::setBDTable(uint8_t ID, uint8_t baud){
 	return(sendWord(ID, EEPROM_BAUD_RATE, baud, ONE_BYTE));
 }
@@ -651,13 +676,16 @@ int DynamixelClass::setGoalAccel(uint8_t ID, uint8_t accel){
 
 //CUSTOM FUNCTIONS---------------------------------------------------------
 
-//Configure both ID and Baudrate of the servo
-//TODO: does the change in baudrate requieres a reset?
+//Configure both ID and Baudrate of the servo. By changing the baudrate, the communications will restart automatically
+//The next time time you call the servos you need to use the NEW baudrate
 void DynamixelClass::configureServo(uint8_t ID, uint8_t newID, long baud){
+
 	setID(ID, newID);
-	delay(10);
 	setBD(newID, baud);
-	delay(10);
+
+	//End communications and restart with new baudrate
+	end();
+	begin(baud, Direction_Pin);
 }
 
 //Set both angle limits.

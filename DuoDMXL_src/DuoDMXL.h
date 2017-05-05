@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.0.3
+DuoDMXL v.1.0
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,8 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+ 2017-05-05:	v.1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
+ 						User can change the baudrate in the same session, without reseting the microcontroller
  2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
  						TIME_OUT and COOL_DOWN are accessible to the user
  2017-04-13: 	v.0.2.2	Added extra comments.
@@ -170,8 +172,11 @@ class DynamixelClass {
 		static const int LENGTH_INCORRECT = -2;
 
 		//Variables regarding performance of DuoDMXL
-		uint8_t TIME_OUT = 50;        					//Waiting time (milliseconds) for the incomming data from servomotor
+		uint8_t TIME_OUT = 50;        					//Waiting time (milliseconds) for the incomming data from servomotor. Recommended value:50
 		uint16_t COOL_DOWN = 0;							//Cool down period (milliseconds) before sending another command to the dynamixel servomotor
+
+		//flags
+		bool _response_within_timeout = true;			//Assume every byte of the response is within time
 
 		int read_error(void);
 		int readInformation(void);
