@@ -518,7 +518,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 </tbody>
 </table>
-<p><code>int DynamixelClass::setBD(uint8_t ID, long baud)</code></p>
+<p><code>int DynamixelClass::setBD(uint8_t ID, long baudrate)</code></p>
 <table>
 <thead>
 <tr>
@@ -533,7 +533,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 <tr>
 <td align="left">Notation</td>
-<td align="left">Dynamixel.setBD(ID, baud)</td>
+<td align="left">Dynamixel.setBD(ID, baudrate)</td>
 </tr>
 <tr>
 <td align="left">Parameters</td>
@@ -541,7 +541,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 <tr>
 <td align="left"></td>
-<td align="left">long baud: Desired baudrate for communication. Up to 1Mbps (use 1000000) is officially supported by the servos. This functions truncates the number so there may be a small error on the final value.</td>
+<td align="left">long baudrate: Desired baudrate for communication. Up to 1Mbps (use 1000000) is officially supported by the servos. This functions truncates the number so there may be a small error on the final value. If you need a precies value, use <code>setBDTable(ID, baud)</code> where the following relationship holds: <code>baud = (2000000/baudrate) -1</code></td>
 </tr>
 <tr>
 <td align="left">Returns</td>
@@ -549,6 +549,18 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 </tbody>
 </table>
+<p><strong>NOTE</strong>: After changing the baudrate you need to restart the serial communication with the servos, using the new baudrate. For example:</p>
+<pre><code class="cpp">    //begin communication with the current baudrate
+    Dynamixel.begin(baudrate, dataPin);
+
+    //change baudrate
+    Dynamixel.setBD(servoID, newBaudrate);
+
+    //stop communication and restart with the new baudrate
+    Dynamixe.end();
+    Dynamixel.begin(newBaudrate, datapin);
+</code></pre>
+
 <p><code>int DynamixelClass::setBDTable(uint8_t ID, uint8_t baud)</code></p>
 <table>
 <thead>
@@ -572,7 +584,7 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 <tr>
 <td align="left"></td>
-<td align="left">uint8_t baud: Number from 0 to 255 representing a desired baudrate for communication</td>
+<td align="left">uint8_t baud: Number from 0 to 255 representing a desired baudrate for communication. The resulting baudrate in bps can be calculated as: <code>baudrate = 2000000/(baud + 1)</code></td>
 </tr>
 <tr>
 <td align="left">Returns</td>
@@ -580,6 +592,24 @@ This can be accomplished quickly and cleanly with the following code:</p>
 </tr>
 </tbody>
 </table>
+<p><strong>NOTE</strong>: After changing the baudrate you need to restart the serial communication with the servos, using the new baudrate. See the previous note and following example:</p>
+<pre><code class="cpp">    unsigned long baudrate = 57600              //Currently, the servos are communicating a 57600 bps
+    uint8_t newBaud = 9;                        //A value of 9 corresponds to 200,000 bps. Check ROBOTIS documentation
+
+    //begin communication with the current baudrate
+    Dynamixel.begin(baudrate, dataPin);
+
+    //change baudrate
+    Dynamixel.setBDTable(servoID, newBaud);
+
+    //stop communication and restart with the new baudrate
+    Dynamixe.end();
+
+    unsigned long baudrate = 2000000/(newBaud+1);   //This transforms the value 9 into 200,000
+
+    Dynamixel.begin(baudrate, datapin);
+</code></pre>
+
 <p><code>int DynamixelClass::readBD(uint8_t ID)</code></p>
 <table>
 <thead>
