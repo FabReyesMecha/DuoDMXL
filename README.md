@@ -35,5 +35,5 @@ This library is mainly intended to be used with the Arduino IDE. Just download t
 
 ## Log:
 
-[2017-05-05] Stable release: **DuoDMXL** v1.0
-[2017-05-04] Uploaded **DuoDMXL** v0.3
+* [2017-05-05] Stable release: **DuoDMXL** v1.0
+* [2017-05-04] Uploaded **DuoDMXL** v0.3
