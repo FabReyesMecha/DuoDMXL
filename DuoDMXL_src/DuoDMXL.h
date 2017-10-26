@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.0
+DuoDMXL v.1.1
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,10 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+ 2017-10-24:	v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
+ 						sendWord() and readWord() now send whole arrays instead of byte-by-byte
+ 						sendWords() function created to send information to all servos quickly using REG_WRITE and ACTION
+ 						ping(), reset() and action() functions now supported
  2017-05-05:	v.1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
  						User can change the baudrate in the same session, without reseting the microcontroller
  2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
@@ -129,13 +133,11 @@ This program is free software: you can redistribute it and/or modify
 #define DMXL_REG_WRITE              		4
 #define DMXL_ACTION                 		5
 #define DMXL_RESET                  		6
-#define DMXL_SYNC_WRITE             		131
+#define DMXL_SYNC_WRITE             		131			//0x83
 
 // Specials ///////////////////////////////////////////////////////////////
 #define OFF                         		0
 #define ON                          		1
-#define DMXL_RESET_LENGTH					2
-#define DMXL_ACTION_LENGTH					2
 #define DMXL_GOAL_SP_LENGTH         		7
 #define DMXL_ACTION_CHECKSUM				250
 #define BROADCAST_ID                		254
@@ -146,6 +148,9 @@ This program is free software: you can redistribute it and/or modify
 
 //Length of commands
 #define LENGTH_READ							4			//All read functions requiere only a length of 4 (Instruction + command adress + length of data + checksum)
+#define LENGTH_ACTION						2			//Action only requires a length of 2 (Instruction + checksum)
+#define LENGTH_PING							2			//Ping only requires a length of 2 (Instruction + checksum)
+#define LENGTH_RESET						2			//Reset only requires a length of 2 (Instruction + checksum)
 #define ONE_BYTE							1
 #define TWO_BYTES							2
 
@@ -178,13 +183,13 @@ class DynamixelClass {
 		//flags
 		bool _response_within_timeout = true;			//Assume every byte of the response is within time
 
-		int read_error(void);
 		int readInformation(void);
 
 	public:
 
 	//General functions
-		int sendWord(uint8_t ID, uint8_t address, int params, int noParams);
+		int sendWord(uint8_t ID, uint8_t address, int params, int noParams, uint8_t instruction);
+		int sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams);
 		int readWord(uint8_t ID, uint8_t address, int noParams);
 
 		void begin(long baud, uint8_t directionPin);
@@ -193,7 +198,7 @@ class DynamixelClass {
 
 		int reset(uint8_t ID);
 		int ping(uint8_t ID);
-		void action(void);
+		void action(uint8_t ID);
 
 	//EEPROM Area Instructions
 		int readModel(uint8_t ID);
@@ -219,6 +224,7 @@ class DynamixelClass {
 		int readMaxTorque(uint8_t ID);
 		int setSRL(uint8_t ID, uint8_t SRL);
 		int readSRL(uint8_t ID);
+		int setBoardSRL(uint8_t SRL);
 		int setAlarmLED(uint8_t ID, uint8_t alarm);
 		int readAlarmLED(uint8_t ID);
 		int setShutdownAlarm(uint8_t ID, uint8_t SALARM);
@@ -239,7 +245,8 @@ class DynamixelClass {
 		int setGainP(uint8_t ID, int gain);
 		int readGainP(uint8_t ID);
 		int move(uint8_t ID, int Position);
-		int moveSpeed(uint8_t ID, int Position, int Speed);
+		int move(uint8_t IDs[], uint8_t noIDs, int Positions[]);
+		//int moveSpeed(uint8_t ID, int Position, int Speed);
 		int setMovingSpeed(uint8_t ID, int speed);
 		int readMovingSpeed(uint8_t ID);
 		int setTorqueLimit(uint8_t ID, int torque);

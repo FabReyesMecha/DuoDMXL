@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.0
+DuoDMXL v.1.1
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -37,6 +37,10 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 Log:
 
+2017-10-24:		v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
+					   	sendWord() and readWord() now send whole arrays instead of byte-by-byte
+					   	sendWords() function created to send information to all servos quickly using REG_WRITE and ACTION
+					   	ping(), reset() and action() functions now supported
 2017-05-05:		v.1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
 						User can change the baudrate in the same session, without reseting the microcontroller
 2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
@@ -68,13 +72,14 @@ Log:
 // Macro for the selection of the Serial Port
 //Serial refers to the USB port and is reserved for communication with a PC
 //Serial1 corresponds to the second hardware serial port (where available)
-#define sendData(args)  (Serial1.write(args))   // Write Over Serial
-#define availableData() (Serial1.available())   // Check Serial Data Available
-#define readData()      (Serial1.read())        // Read Serial Data
-#define peekData()      (Serial1.peek())        // Peek Serial Data
-#define beginCom(args)  (Serial1.begin(args))   // Begin Serial Comunication
-#define endCom()        (Serial1.end())         // End Serial Comunication
-#define serialFlush()	(Serial1.flush())		// Wait until data has been written
+#define sendData(args)  			(Serial1.write(args))   			// Write Over Serial
+#define sendDataBuff(args, len)   	(Serial1.write(args, len))     		// Write Over Serial
+#define availableData() 			(Serial1.available())   			// Check Serial Data Available
+#define readData()      			(Serial1.read())        			// Read Serial Data
+#define peekData()      			(Serial1.peek())        			// Peek Serial Data
+#define beginCom(args)  			(Serial1.begin(args))   			// Begin Serial Comunication
+#define endCom()        			(Serial1.end())         			// End Serial Comunication
+#define serialFlush()				(Serial1.flush())					// Wait until data has been written
 
 // Macro for Timing
 #define delayus(args) (delayMicroseconds(args))  // Delay Microseconds
@@ -84,41 +89,6 @@ Log:
 #define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
 
 // Private Methods //////////////////////////////////////////////////////////////
-
-//Read response from the servo and return the error (if any)
-//Function inherited from Savage's library. DEPRECATED by readInformation()
-int DynamixelClass::read_error(void)
-{
-	unsigned long startTime = millis();
-	unsigned long processTime;
-	int lengthMessage;
-
-	//Do nothing until we have the start bytes, ID, and length of the message
-	while( (availableData() <=4) && (((processTime = millis()) - startTime) <= TIME_OUT) ){}
-
-	while (availableData() > 0){
-		Incoming_Byte = readData();										//First byte of the header
-		if ( (Incoming_Byte == 255) && (peekData() == 255) ){
-			readData();                                    				//Second byte of the header
-			readData();                                    				//Dynamixel ID
-			lengthMessage = readData();									//Length of the message
-
-			while( !availableData() ){}
-			Error_Byte = readData();                       				//Error
-
-			for(int i=0; i< (lengthMessage-1); i++){
-				while( !availableData() ){}
-				readData();												//Read rest of the message. The last byte should be the checksum
-			}
-
-			delay(COOL_DOWN);
-			return (Error_Byte);
-		}
-	}
-
-	delay(COOL_DOWN);
-	return(-1);											 				//No servo Response
-}
 
 //General function to read the status package from the servo
 //TODO: Add timer to all 'while( !availableData() ){}'
@@ -198,41 +168,68 @@ int DynamixelClass::readInformation(void)
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-//Function to set the value of a servo's address. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send
-int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParams){
-	uint8_t param_MSB, param_LSB;
+//Function to set the value of a servo's address.
+//noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send
+//In general instruction should be either DMXL_WRITE_DATA or DMXL_REG_WRITE
+int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParams, uint8_t instruction){
+	uint8_t param_MSB, param_LSB, length, lengthPackage;
+	uint8_t *package = NULL;
+
 	param_MSB = param >> 8;
 	param_LSB = param;
 
-	uint8_t length = noParams + 3;				//instruction(address) + noParams + 2 = noParams + 3
+	//Based on numbers of parameters, decide size of outgoing package and calculate checksum
+	if(noParams == 0){
+		length = 2;									//instruction + checksum = 2
+		Checksum = (~(ID + length + instruction))&0xFF;
 
-	if(noParams == ONE_BYTE){
-		Checksum = (~(ID + length + DMXL_WRITE_DATA + address + param_LSB))&0xFF;
+		lengthPackage = 6;
+		package = new uint8_t[lengthPackage];
+
+		package[5] = Checksum;
+	}
+	else if(noParams == ONE_BYTE){
+		length = 4;									//instruction + address + param_LSB + checksum = noParams + 3 = 4
+		Checksum = (~(ID + length + instruction + address + param_LSB))&0xFF;
+
+		lengthPackage = 8;
+		package = new uint8_t[lengthPackage];
+
+		package[5] = address;
+		package[6] = param_LSB;
+		package[7] = Checksum;
 	}
 	else if(noParams == TWO_BYTES){
-		Checksum = (~(ID + length + DMXL_WRITE_DATA + address + param_LSB + param_MSB))&0xFF;
+		length = 5;									//instruction + address + param_LSB + param_MSB + checksum = noParams + 3 = 5
+		Checksum = (~(ID + length + instruction + address + param_LSB + param_MSB))&0xFF;
+
+		lengthPackage = 9;
+		package = new uint8_t[lengthPackage];
+
+		package[5] = address;
+		package[6] = param_LSB;
+		package[7] = param_MSB;
+		package[8] = Checksum;
 	}
+
+	//Rest of the package, common for either a 0, ONE_BYTE or TWO_BYTES package
+	package[0] = DMXL_START;
+	package[1] = DMXL_START;
+	package[2] = ID;
+	package[3] = length;
+	package[4] = instruction;
 
 	switchCom(Direction_Pin,Tx_MODE);
-	sendData(DMXL_START);
-	sendData(DMXL_START);
-	sendData(ID);
-	sendData(length);
-	sendData(DMXL_WRITE_DATA);
-	sendData(address);
-	sendData(param_LSB);
-
-	if(noParams == TWO_BYTES){
-		sendData(param_MSB);
-	}
-
-	sendData(Checksum);
+	sendDataBuff(package, lengthPackage);
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
+	//free(package);
+	delete[] package;
+
 	//Depending on the current value of statusReturnLevel read or skip the status package
 	//if writting a word, then we only expect a package when statusReturnLevel is RETURN_ALL or PING was used (PING not currently supported)
-	if(statusReturnLevel == RETURN_ALL){
+	if( (statusReturnLevel == RETURN_ALL) && (ID!=BROADCAST_ID) ){
 		return(readInformation());
 	}
 	else{
@@ -240,20 +237,87 @@ int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParam
 	}
 }
 
+//Function to set the value of a several servos' address. noIDs is how many servos we are communicating with
+//params is an array with values (one for each servo). noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send per servo
+int DynamixelClass::sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams){
+
+	// Alternative using REG_WRITE and action
+
+	//1- Disable Status Packet for all servos. Since I am using the BROADCAST_ID I am not expecting a status return
+	uint8_t oldStatusReturnLevel = statusReturnLevel;
+
+	if(oldStatusReturnLevel == RETURN_ALL){
+		sendWord(BROADCAST_ID, EEPROM_RETURN_LEVEL, RETURN_READ, ONE_BYTE, DMXL_WRITE_DATA);
+		statusReturnLevel = RETURN_READ;
+	}
+
+	//2- Write params[i] to the registry using DMXL_REG_WRITE
+	for(uint8_t i=0; i<noIDs; i++){
+		sendWord(IDs[i], address, params[i], noParams, DMXL_REG_WRITE);
+	}
+
+	//3- Send DMXL_ACTION to all servos
+	action(BROADCAST_ID);
+
+	//Re-enable the old status return level. Since I am using the BROADCAST_ID I am not expecting a status return
+	if(oldStatusReturnLevel == RETURN_ALL){
+		sendWord(BROADCAST_ID, EEPROM_RETURN_LEVEL, oldStatusReturnLevel, ONE_BYTE, DMXL_WRITE_DATA);
+		statusReturnLevel = oldStatusReturnLevel;
+	}
+
+	//TODO I should actually check for errors
+	return(NO_ERROR);
+
+	// //Alternative using sync_write
+	//
+	// //1- Prepare information
+	// uint8_t length = (noParams+1)*noIDs + 4;				//instruction + address + noParams + (1 + noParams)*noIDs + checksum = (1 + noParams)*noIDs + 4
+	// uint8_t lengthPackage = length + 4;						//DMXL_START + DMXL_START + BROADCAST_ID + length + ...
+	// uint8_t package[lengthPackage]={};
+	// uint16_t tempChecksum = 0;
+	//
+	// //1- I need to create a buffer to hold all the information
+	// package[0]=DMXL_START;
+	// package[1]=DMXL_START;
+	// package[2]=BROADCAST_ID;
+	// package[3]=length;
+	// package[4]=DMXL_SYNC_WRITE;
+	// package[5]=address;
+	// package[6]=noParams;
+	//
+	// for(uint8_t i=0; i<noIDs; i++){
+	// 	package[7 + i*(1 + noParams)] = IDs[i];
+	//
+	// 	for(uint8_t j=0; i<noParams; i++){
+	// 		package[7 + i*(1 + noParams) + 1 + j] = params[i] >> 8*j;
+	// 	}
+	// }
+	//
+	// for(uint8_t i=0; i<(lengthPackage-1); i++){
+	// 	tempChecksum += package[i];
+	// }
+	//
+	// //Save the cheksum in the last position of the buffer
+	// Checksum = (~tempChecksum)&0xFF;
+	// package[lengthPackage-1] = Checksum;
+	//
+	// switchCom(Direction_Pin,Tx_MODE);
+	// sendDataBuff(package, lengthPackage);
+	// serialFlush();
+	// switchCom(Direction_Pin,Rx_MODE);
+
+}
+
 //Function to read the value of a servo's address. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need
 int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 
 	Checksum = (~(ID + LENGTH_READ + DMXL_READ_DATA + address + noParams))&0xFF;
 
+	//Prepare a buffer with all information
+	uint8_t package[8] = {DMXL_START, DMXL_START, ID, LENGTH_READ, DMXL_READ_DATA, address, noParams, Checksum};
+
 	switchCom(Direction_Pin,Tx_MODE);
-	sendData(DMXL_START);
-	sendData(DMXL_START);
-	sendData(ID);
-	sendData(LENGTH_READ);
-	sendData(DMXL_READ_DATA);
-	sendData(address);
-	sendData(noParams);
-	sendData(Checksum);
+	sendDataBuff(package, 8);
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
@@ -268,7 +332,7 @@ int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 }
 
 //Initialize communication with the servos with a user-defined pin for the data direction control
-//By default, always set status return level as RETURN_ALL
+//By default, always set status return level as RETURN_ALL. TODO: Read SRL from either the servos, or the EEPROM
 void DynamixelClass::begin(long baud, uint8_t directionPin){
 	Direction_Pin = directionPin;
 	setDPin(Direction_Pin, OUTPUT);
@@ -287,50 +351,61 @@ void DynamixelClass::end(){
 }
 
 //Function inherited from Savage's library. NOT fully tested or supported by DuoDMXL yet
+//TODO: Test this funtion
 int DynamixelClass::reset(uint8_t ID){
-	Checksum = (~(ID + DMXL_RESET_LENGTH + DMXL_RESET))&0xFF;
+	Checksum = (~(ID + LENGTH_RESET + DMXL_RESET))&0xFF;
+
+	uint8_t package[6] = {DMXL_START, DMXL_START, ID, LENGTH_RESET, DMXL_RESET, Checksum};
 
 	switchCom(Direction_Pin,Tx_MODE);
-	sendData(DMXL_START);
-	sendData(DMXL_START);
-	sendData(ID);
-	sendData(DMXL_RESET_LENGTH);
-	sendData(DMXL_RESET);
-	sendData(Checksum);
+	sendDataBuff(package, 6);
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
-	return (read_error());
+	//Upon reset, SRL should be set to RETURN_ALL
+	statusReturnLevel = RETURN_ALL;
+
+	return(readInformation());
+
+	// //Upon reset, SRL should be set to RETURN_ALL
+	// statusReturnLevel = RETURN_ALL;
+	// return(sendWord(ID, 0, 0, 0, DMXL_RESET));
 }
 
-//Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
+//Ping a servo
+//TODO: Test this function
 int DynamixelClass::ping(uint8_t ID){
+
 	Checksum = (~(ID + DMXL_READ_DATA + DMXL_PING))&0xFF;
 
+	uint8_t package[6] = {DMXL_START, DMXL_START, ID, LENGTH_PING, DMXL_PING, Checksum};
+
 	switchCom(Direction_Pin,Tx_MODE);
-	sendData(DMXL_START);
-	sendData(DMXL_START);
-	sendData(ID);
-	sendData(DMXL_READ_DATA);
-	sendData(DMXL_PING);
-	sendData(Checksum);
+	sendDataBuff(package, 6);
 	serialFlush();
 	switchCom(Direction_Pin,Rx_MODE);
 
-  return (read_error());
+	return(readInformation());
+
+	//return(sendWord(ID, 0, 0, 0, DMXL_PING));
 }
 
-//Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
-void DynamixelClass::action(){
-	switchCom(Direction_Pin,Tx_MODE);
-    sendData(DMXL_START);                // Send Instructions over Serial
-    sendData(DMXL_START);
-    sendData(BROADCAST_ID);
-    sendData(DMXL_ACTION_LENGTH);
-    sendData(DMXL_ACTION);
-    sendData(DMXL_ACTION_CHECKSUM);
-	serialFlush();
-	switchCom(Direction_Pin,Rx_MODE);
+//Send the ACTION Instruction
+void DynamixelClass::action(uint8_t ID){
+	// Checksum = (~(ID + LENGTH_ACTION + DMXL_ACTION))&0xFF;
+	// uint8_t package[6] = {DMXL_START, DMXL_START, ID, LENGTH_ACTION, DMXL_ACTION, Checksum};
+	//
+	// switchCom(Direction_Pin,Tx_MODE);
+	// sendDataBuff(package, 6);
+	// serialFlush();
+	// switchCom(Direction_Pin,Rx_MODE);
+	//
+	// if(ID!=BROADCAST_ID){
+	// 	readInformation();
+	// }
+
+	//tested on 2017-10-26
+	sendWord(ID, 0, 0, 0, DMXL_ACTION);
 }
 
 //Function to read the servo model. EEPROM Address 0(x00) and 1(0x01)
@@ -345,7 +420,7 @@ int DynamixelClass::readFirmware(uint8_t ID){
 
 //Function to set the ID of the servo. EEPROM Address 3(0x03)
 int DynamixelClass::setID(uint8_t ID, uint8_t newID){
-	return(sendWord(ID, EEPROM_ID, newID, ONE_BYTE));
+	return(sendWord(ID, EEPROM_ID, newID, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Function to read the ID of the servo. EEPROM Address 3(0x03)
@@ -358,13 +433,13 @@ int DynamixelClass::readID(uint8_t ID){
 int DynamixelClass::setBD(uint8_t ID, long baud){
 	uint8_t Baud_Rate = round((2000000.0/(float) baud) -1);
 
-	return(sendWord(ID, EEPROM_BAUD_RATE, Baud_Rate, ONE_BYTE));
+	return(sendWord(ID, EEPROM_BAUD_RATE, Baud_Rate, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Function to set baudrate based on the manual's table. EEPROM Address 4(0x04)
 //The baudrate change takes effect immediately. You need to use end() and begin() with the new baudrate
 int DynamixelClass::setBDTable(uint8_t ID, uint8_t baud){
-	return(sendWord(ID, EEPROM_BAUD_RATE, baud, ONE_BYTE));
+	return(sendWord(ID, EEPROM_BAUD_RATE, baud, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Function to read the setting of the baudrate. EEPROM Address 4(0x04)
@@ -374,7 +449,7 @@ int DynamixelClass::readBD(uint8_t ID){
 
 //Set the Return Delay Time (RDT) in microseconds. EEPROM Address 5(0x05)
 int DynamixelClass::setRDT(uint8_t ID, uint8_t RDT){
-	return(sendWord(ID, EEPROM_RETURN_DELAY_TIME, RDT/2, ONE_BYTE));
+	return(sendWord(ID, EEPROM_RETURN_DELAY_TIME, RDT/2, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Read the Return Delay Time (RDT) value. EEPROM Address 5(0x05)
@@ -384,7 +459,7 @@ int DynamixelClass::readRDT(uint8_t ID){
 
 //Set the value for the CW Angle limit. EEPROM Address 6(0x06) and 7(0x07)
 int DynamixelClass::setCWAngleLimit(uint8_t ID, int limit){
-	return(sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, limit, TWO_BYTES));
+	return(sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, limit, TWO_BYTES, DMXL_WRITE_DATA));
 }
 
 //Read the value for the CW Angle limit. EEPROM Address 6(0x06) and 7(0x07)
@@ -394,7 +469,7 @@ int DynamixelClass::readCWAngleLimit(uint8_t ID){
 
 //Set the value for the CCW Angle limit. EEPROM Address 8(0x08) and 9(0x09)
 int DynamixelClass::setCCWAngleLimit(uint8_t ID, int limit){
-	return(sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, limit, TWO_BYTES));
+	return(sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, limit, TWO_BYTES, DMXL_WRITE_DATA));
 }
 
 //Read the value for the CCW Angle limit. EEPROM Address 8(0x08) and 9(0x09)
@@ -404,7 +479,7 @@ int DynamixelClass::readCCWAngleLimit(uint8_t ID){
 
 //Set the limit temperature. EEPROM Address 11(0x0B)
 int DynamixelClass::setTempLimit(uint8_t ID, uint8_t Temperature){
-	return(sendWord(ID, EEPROM_LIMIT_TEMPERATURE, Temperature, ONE_BYTE));
+	return(sendWord(ID, EEPROM_LIMIT_TEMPERATURE, Temperature, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Read the limit temperature. EEPROM Address 11(0x0B)
@@ -414,7 +489,7 @@ int DynamixelClass::readTempLimit(uint8_t ID){
 
 //Set the lowest voltage limit. EEPROM Address 12(0x0C)
 int DynamixelClass::setLowVoltageLimit(uint8_t ID, uint8_t lowVoltage){
-	return(sendWord(ID, EEPROM_DOWN_LIMIT_VOLTAGE, lowVoltage, ONE_BYTE));
+	return(sendWord(ID, EEPROM_DOWN_LIMIT_VOLTAGE, lowVoltage, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Read the lowest voltage limit. EEPROM Address 12(0x0C)
@@ -424,7 +499,7 @@ int DynamixelClass::readLowVoltageLimit(uint8_t ID){
 
 //Set the highest voltage limit. EEPROM Address 13(0x0D)
 int DynamixelClass::setHighVoltageLimit(uint8_t ID, uint8_t highVoltage){
-	return(sendWord(ID, EEPROM_UP_LIMIT_VOLTAGE, highVoltage, ONE_BYTE));
+	return(sendWord(ID, EEPROM_UP_LIMIT_VOLTAGE, highVoltage, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Read the highest voltage limit. EEPROM Address 13(0x0D)
@@ -434,7 +509,7 @@ int DynamixelClass::readHighVoltageLimit(uint8_t ID){
 
 //Set the maximum torque. EEPROM Address 14(0x0E) and 15(0x0F)
 int DynamixelClass::setMaxTorque(uint8_t ID, int MaxTorque){
-	return(sendWord(ID, EEPROM_MAX_TORQUE_L, MaxTorque, TWO_BYTES));
+	return(sendWord(ID, EEPROM_MAX_TORQUE_L, MaxTorque, TWO_BYTES, DMXL_WRITE_DATA));
 }
 
 //Read the maximum torque. EEPROM Address 14(0x0E) and 15(0x0F)
@@ -443,11 +518,12 @@ int DynamixelClass::readMaxTorque(uint8_t ID){
 }
 
 //Set the Status Return Level. EEPROM Address 16(0x10).
-//DuoDMXL assumes that upon reset, all servos have RETURN_ALL. If the value was changed in a previos session, use setSRL(BROADCAST_ID, 2)
+//DuoDMXL assumes that upon reset, all servos have RETURN_ALL. If the value was changed in a previos session, use setSRL(BROADCAST_ID, 2) or setBoardSRL(SRL)
+//The change in SRL takes place beginning with the next communication. Even if sending RETURN_NONE, you may still get a status return
 int DynamixelClass::setSRL(uint8_t ID, uint8_t SRL){
 
 	//Send the new desired status return level
-	int error = sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE);
+	int error = sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE, DMXL_WRITE_DATA);
 	//change the current value of statusReturnLevel
 	statusReturnLevel = SRL;
 
@@ -459,9 +535,16 @@ int DynamixelClass::readSRL(uint8_t ID){
 	return(readWord(ID, EEPROM_RETURN_LEVEL, ONE_BYTE));
 }
 
+//Forcefully set SRL value saved in the DUO, instead of the servo's SRL value
+int DynamixelClass::setBoardSRL(uint8_t SRL){
+	//change the current value of statusReturnLevel
+	statusReturnLevel = SRL;
+	return(NO_ERROR);
+}
+
 //Set Alarm LED. EEPROM Address 17(0x11)
 int DynamixelClass::setAlarmLED(uint8_t ID, uint8_t alarm){
-	return(sendWord(ID, EEPROM_ALARM_LED, alarm, ONE_BYTE));
+	return(sendWord(ID, EEPROM_ALARM_LED, alarm, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Read Alarm LED value. EEPROM Address 17(0x11)
@@ -471,7 +554,7 @@ int DynamixelClass::readAlarmLED(uint8_t ID){
 
 //Set Shutdown alarm. EEPROM Address 18(0x12)
 int DynamixelClass::setShutdownAlarm(uint8_t ID, uint8_t SALARM){
-	return(sendWord(ID, EEPROM_ALARM_SHUTDOWN, SALARM, ONE_BYTE));
+	return(sendWord(ID, EEPROM_ALARM_SHUTDOWN, SALARM, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Read Shutdown alarm value. EEPROM Address 18(0x12)
@@ -481,7 +564,7 @@ int DynamixelClass::readShutdownAlarm(uint8_t ID){
 
 //Set the multi-turn offset values. EEPROM ADDRESS: 20(0x14) and 21(0x15)
 int DynamixelClass::setMultiTurnOffset(uint8_t ID, int offset){
-	return(sendWord(ID, EEPROM_TURN_OFFSET_L, offset, TWO_BYTES));
+	return(sendWord(ID, EEPROM_TURN_OFFSET_L, offset, TWO_BYTES, DMXL_WRITE_DATA));
 }
 
 //Read the multi-turn offset values. EEPROM ADDRESS: 20(0x14) and 21(0x15)
@@ -491,7 +574,7 @@ int DynamixelClass::readMultiTurnOffset(uint8_t ID){
 
 //Set the resolution divider value. EEPROM ADDRESS: 22(0x16)
 int DynamixelClass::setResolutionDivider(uint8_t ID, uint8_t divider){
-	return(sendWord(ID, EEPROM_RESOLUTION_DIV, divider, ONE_BYTE));
+	return(sendWord(ID, EEPROM_RESOLUTION_DIV, divider, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Read the resolution divider value. EEPROM ADDRESS: 22(0x16)
@@ -503,7 +586,7 @@ int DynamixelClass::readResolutionDivider(uint8_t ID){
 
 //Function to turn ON or OFF torque. RAM Address 24(0x18)
 int DynamixelClass::torqueEnable( uint8_t ID, bool Status){
-	return(sendWord(ID, RAM_TORQUE_ENABLE, (int) Status, ONE_BYTE));
+	return(sendWord(ID, RAM_TORQUE_ENABLE, (int) Status, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Function to check if the servo generates torque. RAM Address 24(0x18)
@@ -513,12 +596,12 @@ int DynamixelClass::torqueEnableStatus( uint8_t ID){
 
 //Function to turn ON or OFF the servo's LED. RAM Address 25(0x19)
 int DynamixelClass::ledStatus(uint8_t ID, bool Status){
-	return(sendWord(ID, RAM_LED, (int) Status, ONE_BYTE));
+	return(sendWord(ID, RAM_LED, (int) Status, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Function to set the value of the Derivative gain. RAM Address 26(0x1A)
 int DynamixelClass::setGainD(uint8_t ID, int gain){
-	return(sendWord(ID, RAM_D_GAIN, gain, ONE_BYTE));
+	return(sendWord(ID, RAM_D_GAIN, gain, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Function to read the value of the Derivative gain. RAM Address 26(0x1A)
@@ -528,7 +611,7 @@ int DynamixelClass::readGainD(uint8_t ID){
 
 //Function to set the value of the Integral gain. RAM Address 27(0x1B)
 int DynamixelClass::setGainI(uint8_t ID, int gain){
-	return(sendWord(ID, RAM_I_GAIN, gain, ONE_BYTE));
+	return(sendWord(ID, RAM_I_GAIN, gain, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Function to read the value of the Integral gain. RAM Address 27(0x1B)
@@ -538,7 +621,7 @@ int DynamixelClass::readGainI(uint8_t ID){
 
 //Function to set the value of the Proportional gain. RAM Address 28(0x1C)
 int DynamixelClass::setGainP(uint8_t ID, int gain){
-	return(sendWord(ID, RAM_P_GAIN, gain, ONE_BYTE));
+	return(sendWord(ID, RAM_P_GAIN, gain, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Function to read the value of the Proportional gain. RAM Address 28(0x1C)
@@ -548,40 +631,45 @@ int DynamixelClass::readGainP(uint8_t ID){
 
 //Function to move servo to a specific position. RAM Address 30(0x1E) and 31(0x1F)
 int DynamixelClass::move(uint8_t ID, int Position){
-	return(sendWord(ID, RAM_GOAL_POSITION_L, Position, TWO_BYTES));
+	return(sendWord(ID, RAM_GOAL_POSITION_L, Position, TWO_BYTES, DMXL_WRITE_DATA));
+}
+
+//Function to move servos to a specific positions. RAM Address 30(0x1E) and 31(0x1F)
+int DynamixelClass::move(uint8_t IDs[], uint8_t noIDs, int Positions[]){
+	return(sendWords(IDs, noIDs, RAM_GOAL_POSITION_L, Positions, TWO_BYTES));
 }
 
 //Function inherited from Savage's library. Not fully tested or supported by DuoDMXL yet
-int DynamixelClass::moveSpeed(uint8_t ID, int Position, int Speed){
-    char Position_H,Position_L,Speed_H,Speed_L;
-    Position_H = Position >> 8;
-    Position_L = Position;                // 16 bits - 2 x 8 bits variables
-    Speed_H = Speed >> 8;
-    Speed_L = Speed;                      // 16 bits - 2 x 8 bits variables
-
-	Checksum = (~(ID + DMXL_GOAL_SP_LENGTH + DMXL_WRITE_DATA + RAM_GOAL_POSITION_L + Position_L + Position_H + Speed_L + Speed_H))&0xFF;
-
-	switchCom(Direction_Pin,Tx_MODE);
-    sendData(DMXL_START);                // Send Instructions over Serial
-    sendData(DMXL_START);
-    sendData(ID);
-    sendData(DMXL_GOAL_SP_LENGTH);
-    sendData(DMXL_WRITE_DATA);
-    sendData(RAM_GOAL_POSITION_L);
-    sendData(Position_L);
-    sendData(Position_H);
-    sendData(Speed_L);
-    sendData(Speed_H);
-    sendData(Checksum);
-	serialFlush();;
-	switchCom(Direction_Pin,Rx_MODE);
-
-    return (read_error());               // Return the read error
-}
+// int DynamixelClass::moveSpeed(uint8_t ID, int Position, int Speed){
+//     char Position_H,Position_L,Speed_H,Speed_L;
+//     Position_H = Position >> 8;
+//     Position_L = Position;                // 16 bits - 2 x 8 bits variables
+//     Speed_H = Speed >> 8;
+//     Speed_L = Speed;                      // 16 bits - 2 x 8 bits variables
+//
+// 	Checksum = (~(ID + DMXL_GOAL_SP_LENGTH + DMXL_WRITE_DATA + RAM_GOAL_POSITION_L + Position_L + Position_H + Speed_L + Speed_H))&0xFF;
+//
+// 	switchCom(Direction_Pin,Tx_MODE);
+//     sendData(DMXL_START);                // Send Instructions over Serial
+//     sendData(DMXL_START);
+//     sendData(ID);
+//     sendData(DMXL_GOAL_SP_LENGTH);
+//     sendData(DMXL_WRITE_DATA);
+//     sendData(RAM_GOAL_POSITION_L);
+//     sendData(Position_L);
+//     sendData(Position_H);
+//     sendData(Speed_L);
+//     sendData(Speed_H);
+//     sendData(Checksum);
+// 	serialFlush();;
+// 	switchCom(Direction_Pin,Rx_MODE);
+//
+//     return (read_error());               // Return the read error
+// }
 
 //Function to set the desired moving speed. RAM Address 32(0x20) and 33(0x21)
 int DynamixelClass::setMovingSpeed(uint8_t ID, int speed){
-	return(sendWord(ID, RAM_GOAL_SPEED_L, speed, TWO_BYTES));
+	return(sendWord(ID, RAM_GOAL_SPEED_L, speed, TWO_BYTES, DMXL_WRITE_DATA));
 }
 
 //Function to read the desired moving speed. RAM Address 32(0x20) and 33(0x21)
@@ -591,7 +679,7 @@ int DynamixelClass::readMovingSpeed(uint8_t ID){
 
 //Function to set the value of the goal torque. RAM Address 34(0x22) and 35(0x23)
 int DynamixelClass::setTorqueLimit(uint8_t ID, int torque){
-	return(sendWord(ID, RAM_TORQUE_LIMIT_L, torque, TWO_BYTES));
+	return(sendWord(ID, RAM_TORQUE_LIMIT_L, torque, TWO_BYTES, DMXL_WRITE_DATA));
 }
 
 //Function to read the value of the goal torque. RAM Address 34(0x22) and 35(0x23)
@@ -636,12 +724,12 @@ int DynamixelClass::moving(uint8_t ID){
 
 //Locks the EEPROM. RAM Address 47(0x2F)
 int DynamixelClass::lockEEPROM(uint8_t ID){
-	return(sendWord(ID, RAM_LOCK, 1, ONE_BYTE));
+	return(sendWord(ID, RAM_LOCK, 1, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //RAM Address 48(0x30) and 49(0x31)
 int DynamixelClass::setPunch(uint8_t ID, int Punch){
-	return(sendWord(ID, RAM_PUNCH_L, Punch, TWO_BYTES));
+	return(sendWord(ID, RAM_PUNCH_L, Punch, TWO_BYTES, DMXL_WRITE_DATA));
 }
 
 //RAM Address 48(0x30) and 49(0x31)
@@ -656,7 +744,7 @@ int DynamixelClass::readCurrent(uint8_t ID){
 
 //Torque control mode enable. RAM ADDRESS: 70(0x46)
 int DynamixelClass::torqueControl( uint8_t ID, bool enable){
-	return(sendWord(ID, RAM_TORQUE_CONTROL, (int) enable, ONE_BYTE));
+	return(sendWord(ID, RAM_TORQUE_CONTROL, (int) enable, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //Read the Torque control mode status. RAM ADDRESS: 70(0x46)
@@ -666,12 +754,12 @@ int DynamixelClass::readTorqueControl( uint8_t ID){
 
 //Function to set the goal torque. RAM ADDRESS: 71(0x47) and 72(0x48)
 int DynamixelClass::setGoalTorque(uint8_t ID, int torque){
-	return(sendWord(ID, RAM_GOAL_TORQUE_L, torque, TWO_BYTES));
+	return(sendWord(ID, RAM_GOAL_TORQUE_L, torque, TWO_BYTES, DMXL_WRITE_DATA));
 }
 
 //Function to set goal acceleration/ RAM ADDRESS: 73(0x49)
 int DynamixelClass::setGoalAccel(uint8_t ID, uint8_t accel){
-	return(sendWord(ID, RAM_GOAL_ACCEL, accel, ONE_BYTE));
+	return(sendWord(ID, RAM_GOAL_ACCEL, accel, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
 //CUSTOM FUNCTIONS---------------------------------------------------------
@@ -690,8 +778,8 @@ void DynamixelClass::configureServo(uint8_t ID, uint8_t newID, long baud){
 
 //Set both angle limits.
 void DynamixelClass::setAngleLimit(uint8_t ID, int CWLimit, int CCWLimit){
-	sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, CWLimit, TWO_BYTES);
-	sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, CCWLimit, TWO_BYTES);
+	sendWord(ID, EEPROM_CW_ANGLE_LIMIT_L, CWLimit, TWO_BYTES, DMXL_WRITE_DATA);
+	sendWord(ID, EEPROM_CCW_ANGLE_LIMIT_L, CCWLimit, TWO_BYTES, DMXL_WRITE_DATA);
 }
 
 //Function to set both limits to 0. The servo is functioning in wheel mode
