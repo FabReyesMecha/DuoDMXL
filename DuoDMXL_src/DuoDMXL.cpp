@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.1
+DuoDMXL v.1.3
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -37,6 +37,8 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 Log:
 
+2018-01-09:		v.1.3	Add automatic selection of Pins
+2017-10-27:		v.1.2	Created readWords() for bulk reading values from several servos
 2017-10-24:		v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
 					   	sendWord() and readWord() now send whole arrays instead of byte-by-byte
 					   	sendWords() function created to send information to all servos quickly using REG_WRITE and ACTION
@@ -241,7 +243,7 @@ int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParam
 //params is an array with values (one for each servo). noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send per servo
 int DynamixelClass::sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams){
 
-	// Alternative using REG_WRITE and action
+	// Alternative using REG_WRITE and ACTION
 
 	//1- Disable Status Packet for all servos. Since I am using the BROADCAST_ID I am not expecting a status return
 	uint8_t oldStatusReturnLevel = statusReturnLevel;
@@ -276,7 +278,7 @@ int DynamixelClass::sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int
 	// uint8_t package[lengthPackage]={};
 	// uint16_t tempChecksum = 0;
 	//
-	// //1- I need to create a buffer to hold all the information
+	// //2- I need to create a buffer to hold all the information
 	// package[0]=DMXL_START;
 	// package[1]=DMXL_START;
 	// package[2]=BROADCAST_ID;
@@ -331,18 +333,75 @@ int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 	}
 }
 
+//Function to read the value of a several servos. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need
+//This function assumes address and noParams is the same for all servos. It is necessary to pass a previously allocated array
+void DynamixelClass::readWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int noParams, int *response){
+
+	//1- Prepare information
+	uint8_t length = 3*noIDs + 3;					//instruction + 0x00 + noParams1 + ID1 + address1 + ... + noParamsN + IDN + addressN + Checksum
+	uint8_t lengthPackage = length + 4;				//DMXL_START + DMXL_START + BROADCAST_ID + length + ...
+	uint8_t package[lengthPackage] = {};
+	uint16_t tempChecksum = 0;
+
+	//2- I need to create a buffer to hold all the information
+	package[0] = DMXL_START;
+	package[1] = DMXL_START;
+	package[2] = BROADCAST_ID;
+	package[3] = length;
+	package[4] = DMXL_BULK_READ;
+	package[5] = 0x00;
+
+	for(uint8_t i=0; i<noIDs; i++){
+		package[6 + i*3] = noParams;
+		package[6 + i*3 + 1] = IDs[i];
+		package[6 + i*3 + 2] = address;
+	}
+
+	//3- Obtain cheksum and save it in the last position of the buffer. Checksum starts at the ID
+	for(uint8_t i=2; i<(lengthPackage-1); i++){
+		tempChecksum += package[i];
+	}
+
+	Checksum = (~tempChecksum)&0xFF;
+	package[lengthPackage-1] = Checksum;
+
+	//4- Send the package
+	switchCom(Direction_Pin,Tx_MODE);
+	sendDataBuff(package, lengthPackage);
+	serialFlush();
+	switchCom(Direction_Pin,Rx_MODE);
+
+	//5- Read the return package and save it
+	for(uint8_t i=0; i<noIDs; i++){
+		response[i] = readInformation();
+	}
+
+}
+
 //Initialize communication with the servos with a user-defined pin for the data direction control
 //By default, always set status return level as RETURN_ALL. TODO: Read SRL from either the servos, or the EEPROM
 void DynamixelClass::begin(long baud, uint8_t directionPin){
 	Direction_Pin = directionPin;
 	setDPin(Direction_Pin, OUTPUT);
 	beginCom(baud);
+
+	delay(500);
+
+	// //Set the SRL to RETURN_ALL
+	// delay(100);
+	// setSRL(BROADCAST_ID, RETURN_ALL);
 }
 
 //Initialize communication with the servos with a pre-defined pin (D15) for the data direction control
 void DynamixelClass::begin(long baud){
 	setDPin(Direction_Pin, OUTPUT);
 	beginCom(baud);
+
+	delay(500);
+
+	// //Set the SRL to RETURN_ALL
+	// delay(100);
+	// setSRL(BROADCAST_ID, RETURN_ALL);
 }
 
 //End communication
@@ -687,9 +746,14 @@ int DynamixelClass::readTorqueLimit(uint8_t ID){
 	return(readWord(ID, RAM_TORQUE_LIMIT_L, TWO_BYTES));
 }
 
-//Read the actual position. RAM Address 36(0x24) and 37(0x25)
+//Read the actual position of one servo. RAM Address 36(0x24) and 37(0x25)
 int DynamixelClass::readPosition(uint8_t ID){
 	return(readWord(ID, RAM_PRESENT_POSITION_L, TWO_BYTES));
+}
+
+//Read the actual position of several servos. RAM Address 36(0x24) and 37(0x25)
+void DynamixelClass::readPosition(uint8_t IDs[], uint8_t noIDs, int *positions){
+	readWords(IDs, noIDs, RAM_PRESENT_POSITION_L, TWO_BYTES, positions);
 }
 
 //Read the actual speed. RAM Address 38(0x26) and 39(0x27)

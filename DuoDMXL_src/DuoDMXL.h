@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.1
+DuoDMXL v.1.3
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,20 +34,22 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
- 2017-10-24:	v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
- 						sendWord() and readWord() now send whole arrays instead of byte-by-byte
- 						sendWords() function created to send information to all servos quickly using REG_WRITE and ACTION
- 						ping(), reset() and action() functions now supported
- 2017-05-05:	v.1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
- 						User can change the baudrate in the same session, without reseting the microcontroller
- 2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
- 						TIME_OUT and COOL_DOWN are accessible to the user
- 2017-04-13: 	v.0.2.2	Added extra comments.
- 						changed name read_information() to readInformation()
- 2016-12-22:	v0.2.1	Modified int to unsigned long in reading serial timeout
- 						Marked constants specific to MX-64 and AX-12
- 2016-12-21:	v.0.2
- 2016-06-01:	v.0.1
+2018-01-09:		v.1.3	Add automatic selection of Pins
+2017-10-27:		v.1.2	Created readWords() for bulk reading values from several servos
+2017-10-24:		v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
+						sendWord() and readWord() now send whole arrays instead of byte-by-byte
+						sendWords() function created to send information to all servos quickly using REG_WRITE and ACTION
+						ping(), reset() and action() functions now supported
+2017-05-05:		v.1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
+						User can change the baudrate in the same session, without reseting the microcontroller
+2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
+						TIME_OUT and COOL_DOWN are accessible to the user
+2017-04-13: 	v.0.2.2	Added extra comments.
+						changed name read_information() to readInformation()
+2016-12-22:		v0.2.1	Modified int to unsigned long in reading serial timeout
+						Marked constants specific to MX-64 and AX-12
+2016-12-21:		v.0.2
+2016-06-01:		v.0.1
 
  TODO:
 
@@ -134,6 +136,7 @@ This program is free software: you can redistribute it and/or modify
 #define DMXL_ACTION                 		5
 #define DMXL_RESET                  		6
 #define DMXL_SYNC_WRITE             		131			//0x83
+#define DMXL_BULK_READ             			146			//0x92
 
 // Specials ///////////////////////////////////////////////////////////////
 #define OFF                         		0
@@ -161,7 +164,13 @@ class DynamixelClass {
 	private:
 
 		uint8_t Checksum;
-		uint8_t Direction_Pin = D15;
+
+		#if (PLATFORM_ID==88) || defined(SPARK)
+  			uint8_t Direction_Pin = D15;				//For Duo or Photon
+		#else
+			uint8_t Direction_Pin = 4;					//For Leonardo
+		#endif
+
 		uint8_t Incoming_Byte;
 		int Error_Byte;
 
@@ -191,6 +200,7 @@ class DynamixelClass {
 		int sendWord(uint8_t ID, uint8_t address, int params, int noParams, uint8_t instruction);
 		int sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams);
 		int readWord(uint8_t ID, uint8_t address, int noParams);
+		void readWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int noParams, int *response);
 
 		void begin(long baud, uint8_t directionPin);
 		void begin(long baud);
@@ -252,6 +262,7 @@ class DynamixelClass {
 		int setTorqueLimit(uint8_t ID, int torque);
 		int readTorqueLimit(uint8_t ID);
 		int readPosition(uint8_t ID);
+		void readPosition(uint8_t IDs[], uint8_t noIDs, int *positions);
 		int readSpeed(uint8_t ID);
 		int readLoad(uint8_t ID);
 		int readVoltage(uint8_t ID);
