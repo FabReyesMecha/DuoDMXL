@@ -63,9 +63,9 @@ Log:
  */
 
 #if defined(ARDUINO) && ARDUINO >= 100  // Arduino IDE Version
-#include "Arduino.h"
+	#include "Arduino.h"
 #else
-#include "WProgram.h"
+	#include "WProgram.h"
 #endif
 
 #include "DuoDMXL.h"
@@ -101,16 +101,13 @@ int DynamixelClass::readInformation(void)
 
 	_response_within_timeout = true;									//Reset flag
 
-	//DuoDMXL < v.1.0
-	//Do nothing until we have the start bytes, ID, and length of the message
+	//DuoDMXL < v.1.0. Do nothing until we have the start bytes, ID, and length of the message
 	//while( (availableData() <=4) && (((processTime=(int) millis()) - startTime) <= TIME_OUT) ){}
 
-	//This version works, but it is hard to read and may lead to errors
-	//Do nothing until we have the start bytes, ID, and length of the message
+	//This version works, but it is hard to read and may lead to errors. Do nothing until we have the start bytes, ID, and length of the message
 	//while(  (availableData() <=4)  && (_response_within_timeout = (bool) (((processTime=(int) millis()) - startTime) <= TIME_OUT)) ){}
 
-	//DuoDMXL v.1.0
-	//Do nothing until we have the start bytes, ID, and length of the message. Even at 9600bps, it should take around 31.25[ms] for the four bytes to arrive
+	//DuoDMXL v.1.0. Do nothing until we have the start bytes, ID, and length of the message. Even at 9600bps, it should take around 31.25[ms] for the four bytes to arrive
 	while(  (availableData() <=4)  &&  _response_within_timeout){
 		processTime = (int) millis();
 		processTime = processTime - startTime;							//time since this function started
@@ -118,8 +115,7 @@ int DynamixelClass::readInformation(void)
 		_response_within_timeout = (bool) (processTime <= TIME_OUT);	//is the communication within the allowed time?
 	}
 
-	//Even if there was a TIME_OUT, if there are available bytes in the buffer, read them
-	//DuoDMXL < v.1.0
+	//DuoDMXL < v.1.0. Even if there was a TIME_OUT, if there are available bytes in the buffer, read them
 	//while (availableData() > 0){
 
 	//Only proceed if there was no problem in the communication
@@ -170,9 +166,11 @@ int DynamixelClass::readInformation(void)
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-//Function to set the value of a servo's address.
-//noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send
-//In general instruction should be either DMXL_WRITE_DATA or DMXL_REG_WRITE
+/*
+Function to set (write) the value of a servo's address.
+noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send
+In general instruction should be either DMXL_WRITE_DATA or DMXL_REG_WRITE
+*/
 int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParams, uint8_t instruction){
 	uint8_t param_MSB, param_LSB, length, lengthPackage;
 	uint8_t *package = NULL;
