@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.3
+DuoDMXL v.1.4
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -37,6 +37,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 Log:
 
+2018-01-15:		v.1.4	Add multi-compatibility functions instead of macros
 2018-01-09:		v.1.3	Add automatic selection of Pins
 2017-10-27:		v.1.2	Created readWords() for bulk reading values from several servos
 2017-10-24:		v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
@@ -71,6 +72,7 @@ Log:
 #include "DuoDMXL.h"
 #include <math.h>
 
+/*
 // Macro for the selection of the Serial Port
 //Serial refers to the USB port and is reserved for communication with a PC
 //Serial1 corresponds to the second hardware serial port (where available)
@@ -89,6 +91,16 @@ Log:
 // Macro for Comunication Flow Control
 #define setDPin(DirPin,Mode)   (pinMode(DirPin,Mode))       // Select the Switch to TX/RX Mode Pin
 #define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
+*/
+
+// Macro for Comunication Flow Control
+#if (PLATFORM_ID==88) || defined(SPARK)
+	#define setDPin(DirPin,Mode)   (pinMode(DirPin,Mode))       // Select the Switch to TX/RX Mode Pin
+	#define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
+#else
+	#define setDPin(DirPin,Mode)   (pinMode(DirPin,Mode))       // Select the Switch to TX/RX Mode Pin
+	#define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
+#endif
 
 // Private Methods //////////////////////////////////////////////////////////////
 
@@ -934,6 +946,87 @@ void DynamixelClass::changeTimeOut(uint8_t newTimeOut){
 //Change cool down period (time between sending commands). Unit is [ms]. The maximum value is 65,535 (i.e., 65.535 seconds)
 void DynamixelClass::changeCoolDown(uint16_t newCoolDown){
 	COOL_DOWN = newCoolDown;
+}
+
+//--------------------Multi-compatibility functions------------------------
+
+void DynamixelClass::sendData(uint8_t val){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		Serial1.write(val);								//For Duo or Photon
+	#else
+		Serial1.write(val);								//For Leonardo
+	#endif
+}
+
+void DynamixelClass::sendDataBuff(uint8_t* buff, uint8_t len){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		Serial1.write(buff, len);						//For Duo or Photon
+	#else
+		Serial1.write(buff, len);						//For Leonardo
+	#endif
+}
+
+// Check Serial Data Available
+int DynamixelClass::availableData(void){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		return Serial1.available();
+	#else
+		return Serial1.available();
+	#endif
+}
+
+// Read Serial Data
+uint8_t DynamixelClass::readData(void){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		return Serial1.read();
+	#else
+		return Serial1.read();
+	#endif
+}
+
+// Peek Serial Data
+uint8_t DynamixelClass::peekData(void){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		return Serial1.peek();
+	#else
+		return Serial1.peek();
+	#endif
+}
+
+// Begin Serial Comunication
+void DynamixelClass::beginCom(long speed){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		Serial1.begin(speed);
+	#else
+		Serial1.begin(speed);
+	#endif
+}
+
+// End Serial Comunication
+void DynamixelClass::endCom(void){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		Serial1.end();
+	#else
+		Serial1.end();
+	#endif
+}
+
+// Wait until data has been written
+void DynamixelClass::serialFlush(void){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		Serial1.flush();
+	#else
+		Serial1.flush();
+	#endif
+}
+
+// Macro for Timing. Delay Microseconds
+void DynamixelClass::delayus(unsigned int us){
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		delayMicroseconds(us);
+	#else
+		delayMicroseconds(us);
+	#endif
 }
 
 DynamixelClass Dynamixel;

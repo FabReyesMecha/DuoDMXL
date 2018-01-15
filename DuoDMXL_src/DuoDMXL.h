@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.3
+DuoDMXL v.1.4
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-01-15:		v.1.4	Add multi-compatibility functions instead of macros
 2018-01-09:		v.1.3	Add automatic selection of Pins
 2017-10-27:		v.1.2	Created readWords() for bulk reading values from several servos
 2017-10-24:		v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
@@ -289,6 +290,17 @@ class DynamixelClass {
 		void findServo(uint8_t directionPin);
 		void changeTimeOut(uint8_t newTimeOut);
 		void changeCoolDown(uint16_t newCoolDown);
+
+	//Multi-compatibility functions
+		void sendData(uint8_t);
+		void sendDataBuff(uint8_t*, uint8_t);
+		int availableData(void);
+		uint8_t readData(void);
+		uint8_t peekData(void);
+		void beginCom(long);
+		void endCom(void);
+		void serialFlush(void);
+		void delayus(unsigned int);
 };
 
 extern DynamixelClass Dynamixel;
