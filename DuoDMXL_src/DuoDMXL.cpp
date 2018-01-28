@@ -63,14 +63,7 @@ Log:
  Author:	Fabian Eugenio Reyes Pinner (Fabian Reyes)
  */
 
-#if defined(ARDUINO) && ARDUINO >= 100  // Arduino IDE Version
-	#include "Arduino.h"
-#else
-	#include "WProgram.h"
-#endif
-
 #include "DuoDMXL.h"
-#include <math.h>
 
 /*
 // Macro for the selection of the Serial Port
@@ -102,6 +95,8 @@ Log:
 	#define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
 #endif
 
+
+
 // Private Methods //////////////////////////////////////////////////////////////
 
 //General function to read the status package from the servo
@@ -112,6 +107,11 @@ int DynamixelClass::readInformation(void)
 	int processTime, lengthMessage;
 
 	_response_within_timeout = true;									//Reset flag
+
+	//Set to 0
+	for(uint8_t i=0; i<64; i++){
+		RESPONSE[i] = 0;
+	}
 
 	//DuoDMXL < v.1.0. Do nothing until we have the start bytes, ID, and length of the message
 	//while( (availableData() <=4) && (((processTime=(int) millis()) - startTime) <= TIME_OUT) ){}
@@ -136,12 +136,18 @@ int DynamixelClass::readInformation(void)
 
 		//For now, DuoDMXL assumes there are no problems in the rest of the communication. TODO: put safeguard here
 		if ( (Incoming_Byte == 255) && (peekData() == 255) ){
-			readData();                                    				//Second byte of the header
-			readData();                                    				//Dynamixel ID
+
+			//Fill buffer for debugging
+			RESPONSE[0] = Incoming_Byte;
+
+			RESPONSE[1] = readData();                                  	//Second byte of the header
+			RESPONSE[2] = readData();                                  	//Dynamixel ID
 			lengthMessage = readData();									//Length of the message
+			RESPONSE[3] = lengthMessage;
 
 			while( !availableData() ){}									//Do nothing until the next byte is in the buffer
 			Error_Byte = readData();                       				//Error
+			RESPONSE[4] = Error_Byte;
 
 			if((lengthMessage-2) == 0){
 				data = Error_Byte;										//No data is returned. Send Error_Byte. This is the common response when sending commands
@@ -150,6 +156,8 @@ int DynamixelClass::readInformation(void)
 				while( !availableData() ){}
 				dataLSB = readData();            						//LSB of the data
 				data = (int) dataLSB;
+
+				RESPONSE[5] = dataLSB;
 			}
 			else if((lengthMessage-2) == 2){
 				while( !availableData() ){}
@@ -158,6 +166,9 @@ int DynamixelClass::readInformation(void)
 				dataMSB = readData();									//MSB of the data
 				data = dataMSB << 8;
 				data = data + dataLSB;
+
+				RESPONSE[5] = dataLSB;
+				RESPONSE[6] = dataMSB;
 			}
 			else{
 				data = LENGTH_INCORRECT;								//The length was not correct or there was some problem
@@ -166,13 +177,13 @@ int DynamixelClass::readInformation(void)
 			while( !availableData() ){}
 			readData();													//checksum
 
-			delay(COOL_DOWN);
+			delayms(COOL_DOWN);
 			return (data);
 		}
 	}
 
 	//If there was a TIME_OUT and not enough bytes, there was an error in communication
-	delay(COOL_DOWN);
+	delayms(COOL_DOWN);
 	return (NO_SERVO_RESPONSE);											// No servo Response
 }
 
@@ -388,29 +399,43 @@ void DynamixelClass::readWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, in
 
 }
 
+//TODO: IMPROVE
+void DynamixelClass::printResponse(uint8_t *response){
+	// for(uint8_t i=0; i<64; i++){
+	// 	*(response + i) = RESPONSE[i];
+	// }
+	Serial.println("The response obtained is: [");
+	for(uint8_t i=0; i<63;i++){
+	 	Serial.print(RESPONSE[i]);
+	    Serial.print(",");
+	}
+	Serial.print(RESPONSE[63]);
+	Serial.println("]");
+}
+
 //Initialize communication with the servos with a user-defined pin for the data direction control
 //By default, always set status return level as RETURN_ALL. TODO: Read SRL from either the servos, or the EEPROM
 void DynamixelClass::begin(long baud, uint8_t directionPin){
+
 	Direction_Pin = directionPin;
 	setDPin(Direction_Pin, OUTPUT);
 	beginCom(baud);
-
-	delay(500);
+	delayms(500);
 
 	// //Set the SRL to RETURN_ALL
-	// delay(100);
+	// delayms(100);
 	// setSRL(BROADCAST_ID, RETURN_ALL);
 }
 
 //Initialize communication with the servos with a pre-defined pin (D15) for the data direction control
 void DynamixelClass::begin(long baud){
+
 	setDPin(Direction_Pin, OUTPUT);
 	beginCom(baud);
-
-	delay(500);
+	delayms(500);
 
 	// //Set the SRL to RETURN_ALL
-	// delay(100);
+	// delayms(100);
 	// setSRL(BROADCAST_ID, RETURN_ALL);
 }
 
@@ -778,12 +803,12 @@ int DynamixelClass::readLoad(uint8_t ID){
 
 //Function to read the voltage. RAM Address 42(0x2A)
 int DynamixelClass::readVoltage(uint8_t ID){
-	readWord(ID, RAM_PRESENT_VOLTAGE, ONE_BYTE);
+	return(readWord(ID, RAM_PRESENT_VOLTAGE, ONE_BYTE));
 }
 
 //Function to read the Temperature. RAM Address 43(0x2B)
 int DynamixelClass::readTemperature(uint8_t ID){
-	readWord(ID, RAM_PRESENT_TEMPERATURE, ONE_BYTE);
+	return(readWord(ID, RAM_PRESENT_TEMPERATURE, ONE_BYTE));
 }
 
 //Check if there is an instruction registered. RAM Address 44(0x2C)
@@ -951,6 +976,7 @@ void DynamixelClass::changeCoolDown(uint16_t newCoolDown){
 //--------------------Multi-compatibility functions------------------------
 
 void DynamixelClass::sendData(uint8_t val){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		Serial1.write(val);								//For Duo or Photon
 	#else
@@ -959,6 +985,7 @@ void DynamixelClass::sendData(uint8_t val){
 }
 
 void DynamixelClass::sendDataBuff(uint8_t* buff, uint8_t len){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		Serial1.write(buff, len);						//For Duo or Photon
 	#else
@@ -968,6 +995,7 @@ void DynamixelClass::sendDataBuff(uint8_t* buff, uint8_t len){
 
 // Check Serial Data Available
 int DynamixelClass::availableData(void){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		return Serial1.available();
 	#else
@@ -977,6 +1005,7 @@ int DynamixelClass::availableData(void){
 
 // Read Serial Data
 uint8_t DynamixelClass::readData(void){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		return Serial1.read();
 	#else
@@ -986,6 +1015,7 @@ uint8_t DynamixelClass::readData(void){
 
 // Peek Serial Data
 uint8_t DynamixelClass::peekData(void){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		return Serial1.peek();
 	#else
@@ -995,6 +1025,7 @@ uint8_t DynamixelClass::peekData(void){
 
 // Begin Serial Comunication
 void DynamixelClass::beginCom(long speed){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		Serial1.begin(speed);
 	#else
@@ -1004,6 +1035,7 @@ void DynamixelClass::beginCom(long speed){
 
 // End Serial Comunication
 void DynamixelClass::endCom(void){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		Serial1.end();
 	#else
@@ -1013,6 +1045,7 @@ void DynamixelClass::endCom(void){
 
 // Wait until data has been written
 void DynamixelClass::serialFlush(void){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		Serial1.flush();
 	#else
@@ -1020,8 +1053,19 @@ void DynamixelClass::serialFlush(void){
 	#endif
 }
 
+// Macro for Timing. Delay milliseconds
+void DynamixelClass::delayms(unsigned int ms){
+
+	#if (PLATFORM_ID==88) || defined(SPARK)
+		delay(ms);
+	#else
+		delay(ms);
+	#endif
+}
+
 // Macro for Timing. Delay Microseconds
 void DynamixelClass::delayus(unsigned int us){
+
 	#if (PLATFORM_ID==88) || defined(SPARK)
 		delayMicroseconds(us);
 	#else

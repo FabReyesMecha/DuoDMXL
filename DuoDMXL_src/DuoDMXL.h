@@ -63,8 +63,6 @@ This program is free software: you can redistribute it and/or modify
 #ifndef DuoDMXL_h
 #define DuoDMXL_h
 
-#include <inttypes.h>
-
 	// EEPROM AREA  ///////////////////////////////////////////////////////////
 #define EEPROM_MODEL_NUMBER_L				0
 #define EEPROM_MODEL_NUMBER_H				1
@@ -159,25 +157,32 @@ This program is free software: you can redistribute it and/or modify
 #define TWO_BYTES							2
 
 #include <inttypes.h>
+#include <math.h>
+
+#if defined(ARDUINO) && ARDUINO >= 100  // Arduino IDE Version
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
 class DynamixelClass {
 
 	private:
 
-		uint8_t Checksum;
-
+		//Platform-dependent pins
 		#if (PLATFORM_ID==88) || defined(SPARK)
-  			uint8_t Direction_Pin = D15;				//For Duo or Photon
+			uint8_t Direction_Pin = D15;				//For Duo or Photon
 		#else
 			uint8_t Direction_Pin = 4;					//For Leonardo
 		#endif
 
-		uint8_t Incoming_Byte;
-		int Error_Byte;
+		//Message Structure
+		uint8_t Incoming_Byte, dataLSB, dataMSB, Checksum;
+		int Error_Byte, data;
 
-		uint8_t dataLSB;
-		uint8_t dataMSB;
-		int data;
+		//Buffers
+		uint8_t PACKAGE[64] = {};
+		uint8_t RESPONSE[64]= {};
 
 		uint8_t statusReturnLevel = RETURN_ALL;			//Status return level. 2(default): Return for all commands. 1: Return only for the READ command. 0: No return (except PING)
 
@@ -197,11 +202,13 @@ class DynamixelClass {
 
 	public:
 
-	//General functions
+		//General functions
 		int sendWord(uint8_t ID, uint8_t address, int params, int noParams, uint8_t instruction);
 		int sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams);
 		int readWord(uint8_t ID, uint8_t address, int noParams);
 		void readWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int noParams, int *response);
+
+		void printResponse(uint8_t *response);
 
 		void begin(long baud, uint8_t directionPin);
 		void begin(long baud);
@@ -211,7 +218,7 @@ class DynamixelClass {
 		int ping(uint8_t ID);
 		void action(uint8_t ID);
 
-	//EEPROM Area Instructions
+		//EEPROM Area Instructions
 		int readModel(uint8_t ID);
 		int readFirmware(uint8_t ID);
 		int setID(uint8_t ID, uint8_t newID);
@@ -245,7 +252,7 @@ class DynamixelClass {
 		int setResolutionDivider(uint8_t ID, uint8_t divider);
 		int readResolutionDivider(uint8_t ID);
 
-	//RAM Area Instructions
+		//RAM Area Instructions
 		int torqueEnable(uint8_t ID, bool Status);
 		int torqueEnableStatus(uint8_t ID);
 		int ledStatus(uint8_t ID, bool Status);
@@ -279,7 +286,7 @@ class DynamixelClass {
 		int setGoalTorque(uint8_t ID, int torque);
 		int setGoalAccel(uint8_t ID, uint8_t accel);
 
-	//Custom functions
+		//Custom functions
 		void configureServo(uint8_t ID, uint8_t newID, long baud);
 		void setAngleLimit(uint8_t ID, int CWLimit, int CCWLimit);
 		void setWheelMode(uint8_t ID, bool enable);
@@ -291,7 +298,7 @@ class DynamixelClass {
 		void changeTimeOut(uint8_t newTimeOut);
 		void changeCoolDown(uint16_t newCoolDown);
 
-	//Multi-compatibility functions
+		//Multi-compatibility functions
 		void sendData(uint8_t);
 		void sendDataBuff(uint8_t*, uint8_t);
 		int availableData(void);
@@ -300,6 +307,7 @@ class DynamixelClass {
 		void beginCom(long);
 		void endCom(void);
 		void serialFlush(void);
+		void delayms(unsigned int);
 		void delayus(unsigned int);
 };
 
