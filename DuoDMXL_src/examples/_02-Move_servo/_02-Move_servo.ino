@@ -18,7 +18,7 @@
   * In this example, we will move the servo to 0[deg], 180[deg], and finally 360[deg].
   * Also, we will print the current position to the terminal.
   *
-  * This example introduces the functions Dynamixel.move() and Dynamixel.readPosition()
+  * This example introduces the functions Dynamixel.move(), Dynamixel.setAng(), and Dynamixel.readPosition()
   */
 
 SYSTEM_MODE(MANUAL);  //do not connect to the cloud. Communicate with the servo immediately
@@ -28,7 +28,6 @@ SYSTEM_MODE(MANUAL);  //do not connect to the cloud. Communicate with the servo 
 
 int led1 = D7;      //onboard LED
 int dataPin = D15;  //Pin used to control Data flow between the DUO and Dynamixel. By default we use the D15 Pin which is closest to the TX and RX pins
-int errorMove, servoPos, servoCurrent, servoTorqueEnableStatus, gainD, gainI, gainP;
 int servoID = 1;
 
 long baud = 57600;  //Baudrate for communication with Dynamixel servos (Depending of your servo, this may be 1Mbps by default)
@@ -40,34 +39,31 @@ void setup() {
   Dynamixel.begin(baud, dataPin);         //Initialize the servo at Baud Rate (baud) and Pin Control (dataPin)
 
   delay(1000);                            //Let's wait a little bit
-
+  digitalWrite(led1, HIGH);               //turn on on-board LED to show that the loop has started
 }
 
 void loop() {
-  digitalWrite(led1, HIGH);               //turn on on-board LED to show that the loop has started
-
   int actualPos;
 
   //move to 0[deg] (bit-wise value 0)
   Dynamixel.move(servoID, 0);
+  delay(1000);                            //wait one second for the servo to reach its position
   actualPos = Dynamixel.readPosition(servoID);
   Serial.print("The actual position is: ");
   Serial.println(actualPos);
-  delay(1000);                            //wait one second
 
-  //move to 180[deg] (bit-wise value 2048)
-  Dynamixel.move(servoID, 2048);
+  //move to 180[deg] (bit-wise value 2048). In this case, we can use the setAng() function
+  Dynamixel.setAng(servoID, 180.0, 'd');  //equivalent to 'Dynamixel.move(servoID, 2048)'
+  delay(1000);                            //wait one second for the servo to reach its position
   actualPos = Dynamixel.readPosition(servoID);
   Serial.print("The actual position is: ");
   Serial.println(actualPos);
-  delay(1000);                            //wait one second
 
   //move to 360[deg] (bit-wise value 4095)
   Dynamixel.move(servoID, 4095);
+  delay(1000);                            //wait one second for the servo to reach its position
   actualPos = Dynamixel.readPosition(servoID);
   Serial.print("The actual position is: ");
   Serial.println(actualPos);
-  delay(1000);                            //wait one second
 
-  digitalWrite(led1, LOW);
 }

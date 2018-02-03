@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.4
+DuoDMXL v.1.5
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -37,6 +37,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 Log:
 
+2018-02-03:		v.1.5	Add setAng() functions for specifying desired units
 2018-01-15:		v.1.4	Add multi-compatibility functions instead of macros
 2018-01-09:		v.1.3	Add automatic selection of Pins
 2017-10-27:		v.1.2	Created readWords() for bulk reading values from several servos
@@ -422,9 +423,8 @@ void DynamixelClass::begin(long baud, uint8_t directionPin){
 	beginCom(baud);
 	delayms(500);
 
-	// //Set the SRL to RETURN_ALL
-	// delayms(100);
-	// setSRL(BROADCAST_ID, RETURN_ALL);
+	//Set the SRL to RETURN_ALL
+	setSRL(BROADCAST_ID, RETURN_ALL);
 }
 
 //Initialize communication with the servos with a pre-defined pin (D15) for the data direction control
@@ -434,9 +434,8 @@ void DynamixelClass::begin(long baud){
 	beginCom(baud);
 	delayms(500);
 
-	// //Set the SRL to RETURN_ALL
-	// delayms(100);
-	// setSRL(BROADCAST_ID, RETURN_ALL);
+	//Set the SRL to RETURN_ALL
+	setSRL(BROADCAST_ID, RETURN_ALL);
 }
 
 //End communication
@@ -619,6 +618,9 @@ int DynamixelClass::setSRL(uint8_t ID, uint8_t SRL){
 	//Send the new desired status return level
 	int error = sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE, DMXL_WRITE_DATA);
 	//change the current value of statusReturnLevel
+	// if(error>=0){
+	// 	statusReturnLevel = SRL;
+	// }
 	statusReturnLevel = SRL;
 
 	return(error);
@@ -862,6 +864,41 @@ int DynamixelClass::setGoalAccel(uint8_t ID, uint8_t accel){
 }
 
 //CUSTOM FUNCTIONS---------------------------------------------------------
+
+//Function to move servo to a specific angle [deg]. RAM Address 30(0x1E) and 31(0x1F)
+int DynamixelClass::setAng(uint8_t ID, float angle){
+	//transform angle into 0-4095 values
+	int Position;
+	Position = (int) ( map(angle, 0.0, 360.0, 0.0, 4095.0) );
+	Position = constrain(Position, 0, 4095);
+
+	return(sendWord(ID, RAM_GOAL_POSITION_L, Position, TWO_BYTES, DMXL_WRITE_DATA));
+}
+
+//Function to move servo to a specific angle [deg]. RAM Address 30(0x1E) and 31(0x1F)
+//unit specify the input units: 'b': bit-value, 'd': degrees, 'r': radians
+int DynamixelClass::setAng(uint8_t ID, float angle, char unit){
+
+	int Position, error;
+
+	if(unit == 'b'){
+		Position = (int) angle;
+		error = move(ID, Position);
+	}
+	else if(unit == 'd'){
+		error = setAng(ID, angle);
+	}
+	else if(unit == 'r'){
+		Position = (int) ( map(angle, 0.0, 2*M_PI, 0.0, 4095.0) );
+		Position = constrain(Position, 0, 4095);
+		error = move(ID, Position);
+	}
+	else{
+		error = -2;
+	}
+
+	return(error);
+}
 
 //Configure both ID and Baudrate of the servo. By changing the baudrate, the communications will restart automatically
 //The next time time you call the servos you need to use the NEW baudrate

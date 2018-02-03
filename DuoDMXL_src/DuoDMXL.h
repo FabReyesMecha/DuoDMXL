@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.4
+DuoDMXL v.1.5
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-02-03:		v.1.5	Add setAng() functions for specifying desired units
 2018-01-15:		v.1.4	Add multi-compatibility functions instead of macros
 2018-01-09:		v.1.3	Add automatic selection of Pins
 2017-10-27:		v.1.2	Created readWords() for bulk reading values from several servos
@@ -287,6 +288,8 @@ class DynamixelClass {
 		int setGoalAccel(uint8_t ID, uint8_t accel);
 
 		//Custom functions
+		int setAng(uint8_t ID, float angle);
+		int setAng(uint8_t ID, float angle, char unit);
 		void configureServo(uint8_t ID, uint8_t newID, long baud);
 		void setAngleLimit(uint8_t ID, int CWLimit, int CCWLimit);
 		void setWheelMode(uint8_t ID, bool enable);
