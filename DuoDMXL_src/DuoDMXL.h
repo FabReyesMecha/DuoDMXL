@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.5
+DuoDMXL v.1.6
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-02-16:		v.1.6	Add waitData() functions. Avoid blocking if no response is obtained
 2018-02-03:		v.1.5	Add setAng() functions for specifying desired units
 2018-01-15:		v.1.4	Add multi-compatibility functions instead of macros
 2018-01-09:		v.1.3	Add automatic selection of Pins
@@ -178,6 +179,7 @@ class DynamixelClass {
 		#endif
 
 		//Message Structure
+		static const uint8_t MIN_RETURN_LEN = 5;		//Minimum length of return package ({0xFF, 0xFF, ID, lengthMessage, Error_Byte, checksum})
 		uint8_t Incoming_Byte, dataLSB, dataMSB, Checksum;
 		int Error_Byte, data;
 
@@ -185,7 +187,7 @@ class DynamixelClass {
 		uint8_t PACKAGE[64] = {};
 		uint8_t RESPONSE[64]= {};
 
-		uint8_t statusReturnLevel = RETURN_ALL;			//Status return level. 2(default): Return for all commands. 1: Return only for the READ command. 0: No return (except PING)
+		uint8_t statusReturnLevel = RETURN_ALL;			//Status return level. (default)2: Return for all commands. 1: Return only for the READ command. 0: No return (except PING)
 
 		//Error definitions. Use negative values.
 		static const int NO_ERROR = 0;
@@ -200,6 +202,10 @@ class DynamixelClass {
 		bool _response_within_timeout = true;			//Assume every byte of the response is within time
 
 		int readInformation(void);
+
+		bool waitData(int, int);
+		bool waitData(int);
+		bool waitData();
 
 	public:
 

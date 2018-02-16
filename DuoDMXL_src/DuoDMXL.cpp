@@ -1,5 +1,5 @@
 /*
-DuoDMXL v.1.5
+DuoDMXL v.1.6
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -37,6 +37,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
 Log:
 
+2018-02-16:		v.1.6	Add waitData() functions. Avoid blocking if no response is obtained
 2018-02-03:		v.1.5	Add setAng() functions for specifying desired units
 2018-01-15:		v.1.4	Add multi-compatibility functions instead of macros
 2018-01-09:		v.1.3	Add automatic selection of Pins
@@ -105,14 +106,13 @@ Log:
 int DynamixelClass::readInformation(void)
 {
 	unsigned long startTime = millis();
-	int processTime, lengthMessage;
+	int processTime, lengthMessage, dataLength;
 
-	_response_within_timeout = true;									//Reset flag
+	//Reset flag
+	_response_within_timeout = true;
 
-	//Set to 0
-	for(uint8_t i=0; i<64; i++){
-		RESPONSE[i] = 0;
-	}
+	//Reset the buffer
+	memset(RESPONSE, 0, 64);
 
 	//DuoDMXL < v.1.0. Do nothing until we have the start bytes, ID, and length of the message
 	//while( (availableData() <=4) && (((processTime=(int) millis()) - startTime) <= TIME_OUT) ){}
@@ -121,18 +121,21 @@ int DynamixelClass::readInformation(void)
 	//while(  (availableData() <=4)  && (_response_within_timeout = (bool) (((processTime=(int) millis()) - startTime) <= TIME_OUT)) ){}
 
 	//DuoDMXL v.1.0. Do nothing until we have the start bytes, ID, and length of the message. Even at 9600bps, it should take around 31.25[ms] for the four bytes to arrive
-	while(  (availableData() <=4)  &&  _response_within_timeout){
-		processTime = (int) millis();
-		processTime = processTime - startTime;							//time since this function started
+	// while(  (availableData() <=4)  &&  _response_within_timeout){
+	// 	processTime = (int) millis();
+	// 	processTime = processTime - startTime;							//time since this function started
+    //
+	// 	_response_within_timeout = (bool) (processTime <= TIME_OUT);	//is the communication within the allowed time?
+	// }
 
-		_response_within_timeout = (bool) (processTime <= TIME_OUT);	//is the communication within the allowed time?
-	}
+	//DuoDMXL v.1.6. Do nothing until we have the start bytes, ID, length of the message (four bytes). Even at 9600bps, it should take around 3.33[ms] for the four bytes to arrive
+	waitData(4, (int) TIME_OUT);
 
 	//DuoDMXL < v.1.0. Even if there was a TIME_OUT, if there are available bytes in the buffer, read them
 	//while (availableData() > 0){
 
-	//Only proceed if there was no problem in the communication
-	while (availableData() > 0 && _response_within_timeout){
+	//DuoDMXL v.1.0+. Only proceed if there was no problem in the communication
+	while ( (availableData() > 0) && _response_within_timeout){
 		Incoming_Byte = readData();										//First byte of the header
 
 		//For now, DuoDMXL assumes there are no problems in the rest of the communication. TODO: put safeguard here
@@ -140,30 +143,29 @@ int DynamixelClass::readInformation(void)
 
 			//Fill buffer for debugging
 			RESPONSE[0] = Incoming_Byte;
-
 			RESPONSE[1] = readData();                                  	//Second byte of the header
 			RESPONSE[2] = readData();                                  	//Dynamixel ID
-			lengthMessage = readData();									//Length of the message
-			RESPONSE[3] = lengthMessage;
+			RESPONSE[3] = lengthMessage = readData();					//Length of the message
+			dataLength = lengthMessage-2;
 
-			while( !availableData() ){}									//Do nothing until the next byte is in the buffer
-			Error_Byte = readData();                       				//Error
-			RESPONSE[4] = Error_Byte;
+			waitData((int) TIME_OUT);									//Do nothing until the next byte is in the buffer
+			RESPONSE[4] = Error_Byte = readData();                     	//Error
 
-			if((lengthMessage-2) == 0){
+			if(dataLength == 0){
 				data = Error_Byte;										//No data is returned. Send Error_Byte. This is the common response when sending commands
 			}
-			else if( (lengthMessage-2) == 1 ){
-				while( !availableData() ){}
+			else if( dataLength == 1 ){
+				waitData((int) TIME_OUT);
+
 				dataLSB = readData();            						//LSB of the data
 				data = (int) dataLSB;
 
 				RESPONSE[5] = dataLSB;
 			}
-			else if((lengthMessage-2) == 2){
-				while( !availableData() ){}
+			else if(dataLength == 2){
+				waitData(1, TIME_OUT);
+
 				dataLSB = readData();            						//LSB of the data
-				while( !availableData() ){}
 				dataMSB = readData();									//MSB of the data
 				data = dataMSB << 8;
 				data = data + dataLSB;
@@ -175,8 +177,8 @@ int DynamixelClass::readInformation(void)
 				data = LENGTH_INCORRECT;								//The length was not correct or there was some problem
 			}
 
-			while( !availableData() ){}
-			readData();													//checksum
+			waitData((int) TIME_OUT);
+			RESPONSE[MIN_RETURN_LEN + dataLength] = readData();			//checksum
 
 			delayms(COOL_DOWN);
 			return (data);
@@ -186,6 +188,36 @@ int DynamixelClass::readInformation(void)
 	//If there was a TIME_OUT and not enough bytes, there was an error in communication
 	delayms(COOL_DOWN);
 	return (NO_SERVO_RESPONSE);											// No servo Response
+}
+
+//Wait for a certain number of bytes 'length', for a certain amount of time 'timeLimit' [ms]
+bool DynamixelClass::waitData(int length, int timeLimit){
+
+	unsigned long startTime = millis();
+	int processTime;
+    bool response_within_timeout = true;
+
+    while(  (availableData() <=length)  &&  response_within_timeout){
+        processTime = (int) millis();
+        processTime = processTime - startTime;                            //time since this function started
+
+        response_within_timeout = (bool) (processTime <= timeLimit );    //is the communication within the allowed time?
+    }
+
+	//Set global flag
+	_response_within_timeout = response_within_timeout;
+    return response_within_timeout;
+}
+
+//Wait for one byte, for a certain amount of time 'timeLimit' [ms]
+bool DynamixelClass::waitData(int timeLimit){
+    return waitData(0, timeLimit);
+}
+
+//keep waiting until there is at least one byte in the buffer
+bool DynamixelClass::waitData(){
+    while( !availableData() ){}
+	return true;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
