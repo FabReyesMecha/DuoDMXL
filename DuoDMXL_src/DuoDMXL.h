@@ -1,11 +1,11 @@
 /*
-DuoDMXL v.1.6
+DuoDMXL v1.6.1
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
 	Redbear Duo
 	Particle Photon (not tested)
-	Arduino Leonardo (not tested)
+	Arduino Leonardo
 	or any other board with two hardware serial ports (soft serial not tested)
 
 DuoDMXL.h:
@@ -34,28 +34,36 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
-2018-02-16:		v.1.6	Add waitData() functions. Avoid blocking if no response is obtained
-2018-02-03:		v.1.5	Add setAng() functions for specifying desired units
-2018-01-15:		v.1.4	Add multi-compatibility functions instead of macros
-2018-01-09:		v.1.3	Add automatic selection of Pins
-2017-10-27:		v.1.2	Created readWords() for bulk reading values from several servos
-2017-10-24:		v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
+2018-02-17:		v1.6.1	set/get methods for _directionPin and _baudrateDMXL
+						Add servoIntroduction() and printPC/printlnPC macros
+2018-02-16:		v1.6	Add waitData() functions. Avoid blocking if no response is obtained
+2018-02-03:		v1.5	Add setAng() functions for specifying desired units
+2018-01-15:		v1.4	Add multi-compatibility functions instead of macros
+2018-01-09:		v1.3	Add automatic selection of Pins
+2017-10-27:		v1.2	Created readWords() for bulk reading values from several servos
+2017-10-24:		v1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
 						sendWord() and readWord() now send whole arrays instead of byte-by-byte
 						sendWords() function created to send information to all servos quickly using REG_WRITE and ACTION
 						ping(), reset() and action() functions now supported
-2017-05-05:		v.1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
+2017-05-05:		v1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
 						User can change the baudrate in the same session, without reseting the microcontroller
-2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
+2017-05-04: 	v0.3	Status Return Level (SRL) can now be changed by the user
 						TIME_OUT and COOL_DOWN are accessible to the user
-2017-04-13: 	v.0.2.2	Added extra comments.
+2017-04-13: 	v0.2.2	Added extra comments
 						changed name read_information() to readInformation()
 2016-12-22:		v0.2.1	Modified int to unsigned long in reading serial timeout
 						Marked constants specific to MX-64 and AX-12
-2016-12-21:		v.0.2
-2016-06-01:		v.0.1
+2016-12-21:		v0.2
+2016-06-01:		v0.1
 
  TODO:
-
+ 	-Finish keywords file
+	-Finish sendWords()
+	-Finish readWords()
+	-Finish printResponse()
+	-Save SRL in the EEPROM
+	-Test reset()
+	-Test ping()
 -----------------------------------------------------------------------------
 
  Contact: 	burgundianvolker@gmail.com
@@ -146,7 +154,6 @@ This program is free software: you can redistribute it and/or modify
 #define DMXL_ACTION_CHECKSUM				250
 #define BROADCAST_ID                		254
 #define DMXL_START                  		255
-//#define TIME_OUT                    		50        	//[ms] Waiting time for the incomming data from servomotor
 #define Tx_MODE                     		1
 #define Rx_MODE                     		0
 
@@ -173,9 +180,9 @@ class DynamixelClass {
 
 		//Platform-dependent pins
 		#if (PLATFORM_ID==88) || defined(SPARK)
-			uint8_t Direction_Pin = D15;				//For Duo or Photon
+			uint8_t _directionPin = D15;				//For Duo or Photon
 		#else
-			uint8_t Direction_Pin = 4;					//For Leonardo
+			uint8_t _directionPin = 4;					//For Leonardo
 		#endif
 
 		//Message Structure
@@ -195,6 +202,9 @@ class DynamixelClass {
 		static const int LENGTH_INCORRECT = -2;
 
 		//Variables regarding performance of DuoDMXL
+		long _baudrateDMXL = 0;							//Current baudrate used with the servos
+		static const uint16_t USBSERIAL_TIMEOUT = 2000;	//Waiting time [ms] after Serial.begin() with PC. It allows the device to be recognized properly
+		static const uint16_t DMXLSERIAL_TIMEOUT = 500;	//Waiting time [ms] after Serial1.begin() with servos
 		uint8_t TIME_OUT = 50;        					//Waiting time (milliseconds) for the incomming data from servomotor. Recommended value:50
 		uint16_t COOL_DOWN = 0;							//Cool down period (milliseconds) before sending another command to the dynamixel servomotor
 
@@ -296,6 +306,10 @@ class DynamixelClass {
 		//Custom functions
 		int setAng(uint8_t ID, float angle);
 		int setAng(uint8_t ID, float angle, char unit);
+		void setDirectionPin(uint8_t pin);
+		uint8_t getDirectionPin();
+		void setBaudrateDMXL(long baud);
+		long getBaudrateDMXL();
 		void configureServo(uint8_t ID, uint8_t newID, long baud);
 		void setAngleLimit(uint8_t ID, int CWLimit, int CCWLimit);
 		void setWheelMode(uint8_t ID, bool enable);
@@ -306,6 +320,7 @@ class DynamixelClass {
 		void findServo(uint8_t directionPin);
 		void changeTimeOut(uint8_t newTimeOut);
 		void changeCoolDown(uint16_t newCoolDown);
+		void servoIntroduction(uint8_t ID);
 
 		//Multi-compatibility functions
 		void sendData(uint8_t);

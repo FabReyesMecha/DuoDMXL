@@ -55,4 +55,4 @@ setGoalAccel    KEYWORD2
 OFF     	        LITERAL1
 ON              	LITERAL1
 LEFT            	LITERAL1
-RIGTH           	LITERAL1
+RIGHT           	LITERAL1

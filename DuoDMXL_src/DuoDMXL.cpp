@@ -1,21 +1,18 @@
 /*
-DuoDMXL v.1.6
+DuoDMXL v1.6.1
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
 	Redbear Duo
 	Particle Photon (not tested)
-	Arduino Leonardo (not tested)
+	Arduino Leonardo
 	or any other board with two hardware serial ports (soft serial not tested)
 
-DuoDMXL.cpp:
-	Methods for class DynamixelClass
-Dependencies:
-	DuoDMXL.h
-	Arduino.h
+DuoDMXL.h:
+	Definitions of constants and methods for class DynamixelClass
 
-Initially based on Savage's DynamixelSerial Library
-http://savageelectronics.blogspot.jp/2011/01/arduino-y-dynamixel-ax-12.html
+	Initially based on Savage's DynamixelSerial Library
+	http://savageelectronics.blogspot.jp/2011/01/arduino-y-dynamixel-ax-12.html
 -------------------------------------------------------------------------------
 
 Copyright(c) 2016 Fabian Eugenio Reyes Pinner
@@ -35,30 +32,37 @@ This program is free software: you can redistribute it and/or modify
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 -----------------------------------------------------------------------------
-Log:
+ Log:
 
-2018-02-16:		v.1.6	Add waitData() functions. Avoid blocking if no response is obtained
-2018-02-03:		v.1.5	Add setAng() functions for specifying desired units
-2018-01-15:		v.1.4	Add multi-compatibility functions instead of macros
-2018-01-09:		v.1.3	Add automatic selection of Pins
-2017-10-27:		v.1.2	Created readWords() for bulk reading values from several servos
-2017-10-24:		v.1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
-					   	sendWord() and readWord() now send whole arrays instead of byte-by-byte
-					   	sendWords() function created to send information to all servos quickly using REG_WRITE and ACTION
-					   	ping(), reset() and action() functions now supported
-2017-05-05:		v.1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
+2018-02-17:		v1.6.1	set/get methods for _directionPin and _baudrateDMXL
+						Add servoIntroduction() and printPC/printlnPC macros
+2018-02-16:		v1.6	Add waitData() functions. Avoid blocking if no response is obtained
+2018-02-03:		v1.5	Add setAng() functions for specifying desired units
+2018-01-15:		v1.4	Add multi-compatibility functions instead of macros
+2018-01-09:		v1.3	Add automatic selection of Pins
+2017-10-27:		v1.2	Created readWords() for bulk reading values from several servos
+2017-10-24:		v1.1	Created setBoardSRL() to change the board's SRL. Assumes all servos have the same SRL value
+						sendWord() and readWord() now send whole arrays instead of byte-by-byte
+						sendWords() function created to send information to all servos quickly using REG_WRITE and ACTION
+						ping(), reset() and action() functions now supported
+2017-05-05:		v1.0	Improved communication safety in readInformation() using the flag _response_within_timeout
 						User can change the baudrate in the same session, without reseting the microcontroller
-2017-05-04: 	v.0.3	Status Return Level (SRL) can now be changed by the user
-					   	TIME_OUT and COOL_DOWN are accessible to the user
-2017-04-13: 	v.0.2.2	Added extra comments.
-					   	changed name read_information() to readInformation()
+2017-05-04: 	v0.3	Status Return Level (SRL) can now be changed by the user
+						TIME_OUT and COOL_DOWN are accessible to the user
+2017-04-13: 	v0.2.2	Added extra comments
+						changed name read_information() to readInformation()
 2016-12-22:		v0.2.1	Modified int to unsigned long in reading serial timeout
-					   	Marked constants specific to MX-64 and AX-12
-2016-12-21:		v.0.2
-2016-06-01:		v.0.1
+						Marked constants specific to MX-64 and AX-12
+2016-12-21:		v0.2
+2016-06-01:		v0.1
 
  TODO:
-
+	-Finish sendWords()
+	-Finish readWords()
+	-Finish printResponse()
+	-Save SRL in the EEPROM
+	-Test reset()
+	-Test ping()
 -----------------------------------------------------------------------------
 
  Contact: 	burgundianvolker@gmail.com
@@ -90,11 +94,15 @@ Log:
 
 // Macro for Comunication Flow Control
 #if (PLATFORM_ID==88) || defined(SPARK)
-	#define setDPin(DirPin,Mode)   (pinMode(DirPin,Mode))       // Select the Switch to TX/RX Mode Pin
-	#define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
+	#define setDPin(DirPin,Mode)	(pinMode(DirPin,Mode))     	// Select the Switch to TX/RX Mode Pin
+	#define switchCom(DirPin,Mode) 	(digitalWrite(DirPin,Mode))	// Switch to TX/RX Mode
+	#define printPC(value) 			(Serial.print(value))  		// Print to the PC
+	#define printlnPC(value) 		(Serial.println(value))  	// Print to the PC
 #else
 	#define setDPin(DirPin,Mode)   (pinMode(DirPin,Mode))       // Select the Switch to TX/RX Mode Pin
 	#define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
+	#define printPC(value) 			(Serial.print(value))  		// Print to the PC
+	#define printlnPC(value) 		(Serial.println(value))  	// Print to the PC
 #endif
 
 
@@ -102,7 +110,6 @@ Log:
 // Private Methods //////////////////////////////////////////////////////////////
 
 //General function to read the status package from the servo
-//TODO: Add timer to all 'while( !availableData() ){}'
 int DynamixelClass::readInformation(void)
 {
 	unsigned long startTime = millis();
@@ -114,31 +121,14 @@ int DynamixelClass::readInformation(void)
 	//Reset the buffer
 	memset(RESPONSE, 0, 64);
 
-	//DuoDMXL < v.1.0. Do nothing until we have the start bytes, ID, and length of the message
-	//while( (availableData() <=4) && (((processTime=(int) millis()) - startTime) <= TIME_OUT) ){}
-
-	//This version works, but it is hard to read and may lead to errors. Do nothing until we have the start bytes, ID, and length of the message
-	//while(  (availableData() <=4)  && (_response_within_timeout = (bool) (((processTime=(int) millis()) - startTime) <= TIME_OUT)) ){}
-
-	//DuoDMXL v.1.0. Do nothing until we have the start bytes, ID, and length of the message. Even at 9600bps, it should take around 31.25[ms] for the four bytes to arrive
-	// while(  (availableData() <=4)  &&  _response_within_timeout){
-	// 	processTime = (int) millis();
-	// 	processTime = processTime - startTime;							//time since this function started
-    //
-	// 	_response_within_timeout = (bool) (processTime <= TIME_OUT);	//is the communication within the allowed time?
-	// }
-
 	//DuoDMXL v.1.6. Do nothing until we have the start bytes, ID, length of the message (four bytes). Even at 9600bps, it should take around 3.33[ms] for the four bytes to arrive
 	waitData(4, (int) TIME_OUT);
-
-	//DuoDMXL < v.1.0. Even if there was a TIME_OUT, if there are available bytes in the buffer, read them
-	//while (availableData() > 0){
 
 	//DuoDMXL v.1.0+. Only proceed if there was no problem in the communication
 	while ( (availableData() > 0) && _response_within_timeout){
 		Incoming_Byte = readData();										//First byte of the header
 
-		//For now, DuoDMXL assumes there are no problems in the rest of the communication. TODO: put safeguard here
+		//For now, DuoDMXL assumes there are no problems in the rest of the communication
 		if ( (Incoming_Byte == 255) && (peekData() == 255) ){
 
 			//Fill buffer for debugging
@@ -275,10 +265,10 @@ int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParam
 	package[3] = length;
 	package[4] = instruction;
 
-	switchCom(Direction_Pin,Tx_MODE);
+	switchCom(_directionPin,Tx_MODE);
 	sendDataBuff(package, lengthPackage);
 	serialFlush();
-	switchCom(Direction_Pin,Rx_MODE);
+	switchCom(_directionPin,Rx_MODE);
 
 	//free(package);
 	delete[] package;
@@ -357,10 +347,10 @@ int DynamixelClass::sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int
 	// Checksum = (~tempChecksum)&0xFF;
 	// package[lengthPackage-1] = Checksum;
 	//
-	// switchCom(Direction_Pin,Tx_MODE);
+	// switchCom(_directionPin,Tx_MODE);
 	// sendDataBuff(package, lengthPackage);
 	// serialFlush();
-	// switchCom(Direction_Pin,Rx_MODE);
+	// switchCom(_directionPin,Rx_MODE);
 
 }
 
@@ -372,10 +362,10 @@ int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 	//Prepare a buffer with all information
 	uint8_t package[8] = {DMXL_START, DMXL_START, ID, LENGTH_READ, DMXL_READ_DATA, address, noParams, Checksum};
 
-	switchCom(Direction_Pin,Tx_MODE);
+	switchCom(_directionPin,Tx_MODE);
 	sendDataBuff(package, 8);
 	serialFlush();
-	switchCom(Direction_Pin,Rx_MODE);
+	switchCom(_directionPin,Rx_MODE);
 
 	//Depending on the current value of statusReturnLevel read or skip the status package
 	//if reading a word, then we only expect a package when statusReturnLevel is RETURN_ALL or RETURN_READ
@@ -420,10 +410,10 @@ void DynamixelClass::readWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, in
 	package[lengthPackage-1] = Checksum;
 
 	//4- Send the package
-	switchCom(Direction_Pin,Tx_MODE);
+	switchCom(_directionPin,Tx_MODE);
 	sendDataBuff(package, lengthPackage);
 	serialFlush();
-	switchCom(Direction_Pin,Rx_MODE);
+	switchCom(_directionPin,Rx_MODE);
 
 	//5- Read the return package and save it
 	for(uint8_t i=0; i<noIDs; i++){
@@ -439,10 +429,10 @@ void DynamixelClass::printResponse(uint8_t *response){
 	// }
 	Serial.println("The response obtained is: [");
 	for(uint8_t i=0; i<63;i++){
-	 	Serial.print(RESPONSE[i]);
-	    Serial.print(",");
+	 	printPC(RESPONSE[i]);
+	    printPC(",");
 	}
-	Serial.print(RESPONSE[63]);
+	printPC(RESPONSE[63]);
 	Serial.println("]");
 }
 
@@ -450,10 +440,14 @@ void DynamixelClass::printResponse(uint8_t *response){
 //By default, always set status return level as RETURN_ALL. TODO: Read SRL from either the servos, or the EEPROM
 void DynamixelClass::begin(long baud, uint8_t directionPin){
 
-	Direction_Pin = directionPin;
-	setDPin(Direction_Pin, OUTPUT);
+	//Save private variables
+	setBaudrateDMXL(baud);
+	setDirectionPin(directionPin);
+
+	//Start connection using the selected pin
+	setDPin(_directionPin, OUTPUT);
 	beginCom(baud);
-	delayms(500);
+	delayms(DMXLSERIAL_TIMEOUT);
 
 	//Set the SRL to RETURN_ALL
 	setSRL(BROADCAST_ID, RETURN_ALL);
@@ -462,9 +456,13 @@ void DynamixelClass::begin(long baud, uint8_t directionPin){
 //Initialize communication with the servos with a pre-defined pin (D15) for the data direction control
 void DynamixelClass::begin(long baud){
 
-	setDPin(Direction_Pin, OUTPUT);
+	//Save private variables
+	setBaudrateDMXL(baud);
+
+	//Start communication with the default pin
+	setDPin(_directionPin, OUTPUT);
 	beginCom(baud);
-	delayms(500);
+	delayms(DMXLSERIAL_TIMEOUT);
 
 	//Set the SRL to RETURN_ALL
 	setSRL(BROADCAST_ID, RETURN_ALL);
@@ -482,10 +480,10 @@ int DynamixelClass::reset(uint8_t ID){
 
 	uint8_t package[6] = {DMXL_START, DMXL_START, ID, LENGTH_RESET, DMXL_RESET, Checksum};
 
-	switchCom(Direction_Pin,Tx_MODE);
+	switchCom(_directionPin,Tx_MODE);
 	sendDataBuff(package, 6);
 	serialFlush();
-	switchCom(Direction_Pin,Rx_MODE);
+	switchCom(_directionPin,Rx_MODE);
 
 	//Upon reset, SRL should be set to RETURN_ALL
 	statusReturnLevel = RETURN_ALL;
@@ -505,10 +503,10 @@ int DynamixelClass::ping(uint8_t ID){
 
 	uint8_t package[6] = {DMXL_START, DMXL_START, ID, LENGTH_PING, DMXL_PING, Checksum};
 
-	switchCom(Direction_Pin,Tx_MODE);
+	switchCom(_directionPin,Tx_MODE);
 	sendDataBuff(package, 6);
 	serialFlush();
-	switchCom(Direction_Pin,Rx_MODE);
+	switchCom(_directionPin,Rx_MODE);
 
 	return(readInformation());
 
@@ -517,19 +515,6 @@ int DynamixelClass::ping(uint8_t ID){
 
 //Send the ACTION Instruction
 void DynamixelClass::action(uint8_t ID){
-	// Checksum = (~(ID + LENGTH_ACTION + DMXL_ACTION))&0xFF;
-	// uint8_t package[6] = {DMXL_START, DMXL_START, ID, LENGTH_ACTION, DMXL_ACTION, Checksum};
-	//
-	// switchCom(Direction_Pin,Tx_MODE);
-	// sendDataBuff(package, 6);
-	// serialFlush();
-	// switchCom(Direction_Pin,Rx_MODE);
-	//
-	// if(ID!=BROADCAST_ID){
-	// 	readInformation();
-	// }
-
-	//tested on 2017-10-26
 	sendWord(ID, 0, 0, 0, DMXL_ACTION);
 }
 
@@ -554,10 +539,9 @@ int DynamixelClass::readID(uint8_t ID){
 }
 
 //Function to set baudrate. EEPROM Address 4(0x04).
-//The baudrate change takes effect immediately. You need to use end() and begin() with the new baudrate
+//The baudrate change takes effect immediately. You need to use end() and then begin() with the new baudrate
 int DynamixelClass::setBD(uint8_t ID, long baud){
-	uint8_t Baud_Rate = round((2000000.0/(float) baud) -1);
-
+	uint8_t Baud_Rate = round( (2000000.0/((float) baud)) -1 );
 	return(sendWord(ID, EEPROM_BAUD_RATE, Baud_Rate, ONE_BYTE, DMXL_WRITE_DATA));
 }
 
@@ -644,15 +628,11 @@ int DynamixelClass::readMaxTorque(uint8_t ID){
 
 //Set the Status Return Level. EEPROM Address 16(0x10).
 //DuoDMXL assumes that upon reset, all servos have RETURN_ALL. If the value was changed in a previos session, use setSRL(BROADCAST_ID, 2) or setBoardSRL(SRL)
-//The change in SRL takes place beginning with the next communication. Even if sending RETURN_NONE, you may still get a status return
+//The change in SRL takes place beginning with the NEXT communication. Even if sending RETURN_NONE, you may still get a status return
 int DynamixelClass::setSRL(uint8_t ID, uint8_t SRL){
 
 	//Send the new desired status return level
 	int error = sendWord(ID, EEPROM_RETURN_LEVEL, SRL, ONE_BYTE, DMXL_WRITE_DATA);
-	//change the current value of statusReturnLevel
-	// if(error>=0){
-	// 	statusReturnLevel = SRL;
-	// }
 	statusReturnLevel = SRL;
 
 	return(error);
@@ -777,7 +757,7 @@ int DynamixelClass::move(uint8_t IDs[], uint8_t noIDs, int Positions[]){
 //
 // 	Checksum = (~(ID + DMXL_GOAL_SP_LENGTH + DMXL_WRITE_DATA + RAM_GOAL_POSITION_L + Position_L + Position_H + Speed_L + Speed_H))&0xFF;
 //
-// 	switchCom(Direction_Pin,Tx_MODE);
+// 	switchCom(_directionPin,Tx_MODE);
 //     sendData(DMXL_START);                // Send Instructions over Serial
 //     sendData(DMXL_START);
 //     sendData(ID);
@@ -790,7 +770,7 @@ int DynamixelClass::move(uint8_t IDs[], uint8_t noIDs, int Positions[]){
 //     sendData(Speed_H);
 //     sendData(Checksum);
 // 	serialFlush();;
-// 	switchCom(Direction_Pin,Rx_MODE);
+// 	switchCom(_directionPin,Rx_MODE);
 //
 //     return (read_error());               // Return the read error
 // }
@@ -932,6 +912,26 @@ int DynamixelClass::setAng(uint8_t ID, float angle, char unit){
 	return(error);
 }
 
+//Set the direction pin of the serial communication with DMXL
+void DynamixelClass::setDirectionPin(uint8_t pin){
+	_directionPin = pin;
+}
+
+//Get the direction pin of the serial communication with DMXL
+uint8_t DynamixelClass::getDirectionPin(){
+	return(_directionPin);
+}
+
+//Set the baudrate of the serial communication with DMXL without ending/beginning serial
+void DynamixelClass::setBaudrateDMXL(long baud){
+	_baudrateDMXL = baud;
+}
+
+//Get the baudrate of the serial communication with DMXL
+long DynamixelClass::getBaudrateDMXL(){
+	return(_baudrateDMXL);
+}
+
 //Configure both ID and Baudrate of the servo. By changing the baudrate, the communications will restart automatically
 //The next time time you call the servos you need to use the NEW baudrate
 void DynamixelClass::configureServo(uint8_t ID, uint8_t newID, long baud){
@@ -941,7 +941,7 @@ void DynamixelClass::configureServo(uint8_t ID, uint8_t newID, long baud){
 
 	//End communications and restart with new baudrate
 	end();
-	begin(baud, Direction_Pin);
+	begin(baud, _directionPin);
 }
 
 //Set both angle limits.
@@ -1014,18 +1014,18 @@ void DynamixelClass::findServo(uint8_t directionPin){
 
 	     if( (error=readID(j)) != -1){										//If we get anything but an error
 	       //digitalWrite(led1, HIGH);
-	       Serial.print("Attempting ID: ");
-	       Serial.print(j);
-	       Serial.print(", attempted baud rate is: ");
-	       Serial.print(i);
-	       Serial.print(", and the returned baudrate is: ");
-	       Serial.println(readBD(j));
+	       printPC("Attempting ID: ");
+	       printPC(j);
+	       printPC(", attempted baud rate is: ");
+	       printPC(i);
+	       printPC(", and the returned baudrate is: ");
+	       printlnPC(readBD(j));
 	     }
 	     else{
-	       Serial.print("Attempted ID: ");
-	       Serial.print(j);
-	       Serial.print(", attempted baud rate is: ");
-	       Serial.println(i);
+	       printPC("Attempted ID: ");
+	       printPC(j);
+	       printPC(", attempted baud rate is: ");
+	       printlnPC(i);
 	       }
 	   }
 	   end();
@@ -1040,6 +1040,75 @@ void DynamixelClass::changeTimeOut(uint8_t newTimeOut){
 //Change cool down period (time between sending commands). Unit is [ms]. The maximum value is 65,535 (i.e., 65.535 seconds)
 void DynamixelClass::changeCoolDown(uint16_t newCoolDown){
 	COOL_DOWN = newCoolDown;
+}
+
+//Print information about the servo. Use carefully since it uses the Serial port
+void DynamixelClass::servoIntroduction(uint8_t ID){
+	printlnPC("------------------------------------------");
+
+	printPC("Hi, I am a servo model ");
+	printPC(ID);
+	printPC(" with Firmware version ");
+	printPC(readFirmware(ID));
+	printlnPC(", my ID is ");
+	printPC(readID(ID));
+	printPC(", communicating at a baudrate of ");
+	printPC(readBD(ID));
+	printPC(", with a RDT of ");
+	printlnPC(readRDT(ID));
+
+	printPC("CW limit set as ");
+	printPC(readCWAngleLimit(ID));
+	printPC(", CCW limit set as ");
+	printlnPC(readCCWAngleLimit(ID));
+
+	printPC("The temperature limit, lowest voltage limit, highest voltage limit, and max torque are: ");
+	printPC(readTempLimit(ID));
+	printPC(", ");
+	printPC(readLowVoltageLimit(ID));
+	printPC(", ");
+	printPC(readHighVoltageLimit(ID));
+	printPC(", ");
+	printlnPC(readMaxTorque(ID));
+
+	printPC("My Status return level, Alarm LED, and shutdown alarm settings are: ");
+	printPC(readSRL(ID));
+	printPC(", ");
+	printPC(readAlarmLED(ID));
+	printPC(", ");
+	printlnPC(readShutdownAlarm(ID));
+
+	printPC("The multi-turn offset setting and resolution divider are: ");
+	printPC(readMultiTurnOffset(ID));
+	printPC(", ");
+	printlnPC(readResolutionDivider(ID));
+
+	printPC("The DIP gains are: ");
+	printPC(readGainD(ID));
+	printPC(", ");
+	printPC(readGainI(ID));
+	printPC(", and ");
+	printlnPC(readGainP(ID));
+
+	printPC("The value of moving speed is: ");
+	printlnPC(readMovingSpeed(ID));
+	printPC("The value of torque limit (goal torque) is: ");
+	printlnPC(readTorqueLimit(ID));
+
+	printPC("My present load is: ");
+	printPC(readLoad(ID));
+	printPC("I am operating at a voltage of ");
+	printPC(readVoltage(ID));
+	printPC(" and a temperature of ");
+	printlnPC(readTemperature(ID));
+
+	printPC("Is there a function waiting to be executed in Registered?: ");
+	printlnPC(registeredStatus(ID));
+
+	printPC("Is a moving (goal_position) command being executed?: ");
+	printlnPC(moving(ID));
+
+	printlnPC("------------------------------------------");
 }
 
 //--------------------Multi-compatibility functions------------------------
