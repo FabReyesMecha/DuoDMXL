@@ -1,5 +1,5 @@
 /*
-DuoDMXL v1.7
+DuoDMXL v1.8
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-02-19:		v1.8	sendWords() works correctly
 2018-02-19:		v1.7	Tested more throughoughly readWords(). Timming tests
  						Improved sendWord(). Correct use when using ping(), BROADCAST_ID, and SRL
 2018-02-17:		v1.6.1	set/get methods for _directionPin and _baudrateDMXL
@@ -59,8 +60,6 @@ This program is free software: you can redistribute it and/or modify
 2016-06-01:		v0.1
 
  TODO:
-	-Finish sendWords()
-	-Finish printResponse()
 	-Save SRL in the EEPROM
 	-Test reset()
 -----------------------------------------------------------------------------
@@ -70,27 +69,6 @@ This program is free software: you can redistribute it and/or modify
  */
 
 #include "DuoDMXL.h"
-
-/*
-// Macro for the selection of the Serial Port
-//Serial refers to the USB port and is reserved for communication with a PC
-//Serial1 corresponds to the second hardware serial port (where available)
-#define sendData(args)  			(Serial1.write(args))   			// Write Over Serial
-#define sendDataBuff(args, len)   	(Serial1.write(args, len))     		// Write Over Serial
-#define availableData() 			(Serial1.available())   			// Check Serial Data Available
-#define readData()      			(Serial1.read())        			// Read Serial Data
-#define peekData()      			(Serial1.peek())        			// Peek Serial Data
-#define beginCom(args)  			(Serial1.begin(args))   			// Begin Serial Comunication
-#define endCom()        			(Serial1.end())         			// End Serial Comunication
-#define serialFlush()				(Serial1.flush())					// Wait until data has been written
-
-// Macro for Timing
-#define delayus(args) (delayMicroseconds(args))  // Delay Microseconds
-
-// Macro for Comunication Flow Control
-#define setDPin(DirPin,Mode)   (pinMode(DirPin,Mode))       // Select the Switch to TX/RX Mode Pin
-#define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
-*/
 
 // Macro for Comunication Flow Control
 #if (PLATFORM_ID==88) || defined(SPARK)
@@ -289,70 +267,70 @@ int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParam
 //params is an array with values (one for each servo). noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send per servo
 int DynamixelClass::sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams){
 
-	// ---------------Alternative using REG_WRITE and ACTION---------------
+	// ----Alternative using REG_WRITE and ACTION (sometimes hangs)----------
 
-	//1- Disable Status Packet for all servos. Since I am using the BROADCAST_ID I am not expecting a status return
-	uint8_t oldStatusReturnLevel = statusReturnLevel;
-	if(oldStatusReturnLevel != RETURN_READ){
-		sendWord(BROADCAST_ID, EEPROM_RETURN_LEVEL, RETURN_READ, ONE_BYTE, DMXL_WRITE_DATA);
-		statusReturnLevel = RETURN_READ;
-	}
-
-	//2- Write params[i] to the registry using DMXL_REG_WRITE
-	for(uint8_t i=0; i<noIDs; i++){
-		sendWord(IDs[i], address, params[i], noParams, DMXL_REG_WRITE);
-	}
-
-	//3- Send DMXL_ACTION to all servos
-	action(BROADCAST_ID);
-
-	//Re-enable the old status return level. Since I am using the BROADCAST_ID I am not expecting a status return
-	if(oldStatusReturnLevel != RETURN_READ){
-		sendWord(BROADCAST_ID, EEPROM_RETURN_LEVEL, oldStatusReturnLevel, ONE_BYTE, DMXL_WRITE_DATA);
-		statusReturnLevel = oldStatusReturnLevel;
-	}
-
-	//TODO I should actually check for errors
-	return(NO_ERROR);
-
-	// //-------------Alternative using sync_write-----------------------------
+	// //1- Disable Status Packet for all servos. Since I am using the BROADCAST_ID I am not expecting a status return
+	// uint8_t oldStatusReturnLevel = statusReturnLevel;
+	// if(oldStatusReturnLevel != RETURN_READ){
+	// 	sendWord(BROADCAST_ID, EEPROM_RETURN_LEVEL, RETURN_READ, ONE_BYTE, DMXL_WRITE_DATA);
+	// 	statusReturnLevel = RETURN_READ;
+	// }
 	//
-	// //1- Prepare information
-	// uint8_t length = (noParams+1)*noIDs + 4;				//instruction + address + noParams + (1 + noParams)*noIDs + checksum = (1 + noParams)*noIDs + 4
-	// uint8_t lengthPackage = length + 4;						//DMXL_START + DMXL_START + BROADCAST_ID + length + ...
-	// uint8_t package[lengthPackage]={};
-	// uint16_t tempChecksum = 0;
-	//
-	// //2- I need to create a buffer to hold all the information
-	// package[0]=DMXL_START;
-	// package[1]=DMXL_START;
-	// package[2]=BROADCAST_ID;
-	// package[3]=length;
-	// package[4]=DMXL_SYNC_WRITE;
-	// package[5]=address;
-	// package[6]=noParams;
-	//
+	// //2- Write params[i] to the registry using DMXL_REG_WRITE
 	// for(uint8_t i=0; i<noIDs; i++){
-	// 	package[7 + i*(1 + noParams)] = IDs[i];
-	//
-	// 	for(uint8_t j=0; i<noParams; i++){
-	// 		package[7 + i*(1 + noParams) + 1 + j] = params[i] >> 8*j;
-	// 	}
+	// 	sendWord(IDs[i], address, params[i], noParams, DMXL_REG_WRITE);
 	// }
 	//
-	// for(uint8_t i=0; i<(lengthPackage-1); i++){
-	// 	tempChecksum += package[i];
+	// //3- Send DMXL_ACTION to all servos
+	// action(BROADCAST_ID);
+	//
+	// //Re-enable the old status return level. Since I am using the BROADCAST_ID I am not expecting a status return
+	// if(oldStatusReturnLevel != RETURN_READ){
+	// 	sendWord(BROADCAST_ID, EEPROM_RETURN_LEVEL, oldStatusReturnLevel, ONE_BYTE, DMXL_WRITE_DATA);
+	// 	statusReturnLevel = oldStatusReturnLevel;
 	// }
 	//
-	// //Save the cheksum in the last position of the buffer
-	// Checksum = (~tempChecksum)&0xFF;
-	// package[lengthPackage-1] = Checksum;
-	//
-	// switchCom(_directionPin,Tx_MODE);
-	// sendDataBuff(package, lengthPackage);
-	// serialFlush();
-	// switchCom(_directionPin,Rx_MODE);
+	// return(NO_ERROR);
 
+	//-------------Alternative using sync_write-----------------------------
+
+	//1- Prepare information
+	uint8_t length = (noParams+1)*noIDs + 4;				//instruction + address + noParams + (1 + noParams)*noIDs + checksum = (1 + noParams)*noIDs + 4
+	uint8_t lengthPackage = length + 4;						//DMXL_START + DMXL_START + BROADCAST_ID + length + {package}
+	uint8_t package[lengthPackage] = {};
+	uint16_t tempChecksum = 0;
+
+	//2- Buffer to hold all the information
+	package[0]=DMXL_START;
+	package[1]=DMXL_START;
+	package[2]=BROADCAST_ID;
+	package[3]=length;
+	package[4]=DMXL_SYNC_WRITE;
+	package[5]=address;
+	package[6]=noParams;
+
+	for(uint8_t i=0; i<noIDs; i++){
+		//Save ID
+		package[7 + i*(1 + noParams)] = IDs[i];
+
+		//Save LSB and MSB
+		for(uint8_t j=0; j<noParams; j++){
+			package[7 + i*(1 + noParams) + 1 + j] = (uint8_t) ( params[i] >> (8*j) );
+		}
+	}
+
+	//Obtain cheksum and save it in the last position of the buffer. Checksum starts at the ID
+	for(uint8_t i=2; i<(lengthPackage-1); i++){
+		tempChecksum += package[i];
+	}
+	Checksum = (~tempChecksum)&0xFF;
+	package[lengthPackage-1] = Checksum;
+
+	//Send the package
+	switchCom(_directionPin,Tx_MODE);
+	sendDataBuff(package, lengthPackage);
+	serialFlush();
+	switchCom(_directionPin,Rx_MODE);
 }
 
 //Function to read the value of a servo's address. noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need
@@ -421,19 +399,6 @@ void DynamixelClass::readWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, in
 		response[i] = readInformation();
 	}
 
-}
-
-// TODO: Finish. Print the last package received
-void DynamixelClass::printResponse(uint8_t *response){
-
-	printlnPC("The response obtained is: [");
-	for(uint8_t i=0; i<63;i++){
-		printPC(RESPONSE[i]);
-	    printPC(",");
-	}
-
-	printPC(RESPONSE[63]);
-	printlnPC("]");
 }
 
 //Initialize communication with the servos with a user-defined pin for the data direction control

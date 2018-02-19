@@ -1,5 +1,5 @@
 /*
-DuoDMXL v1.7
+DuoDMXL v1.8
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,7 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-02-19:		v1.8	sendWords() works correctly
 2018-02-19:		v1.7	Tested more throughoughly readWords(). Timming tests
 						Improved sendWord(). Correct use when using ping(), BROADCAST_ID, and SRL
 2018-02-17:		v1.6.1	set/get methods for _directionPin and _baudrateDMXL
@@ -59,9 +60,6 @@ This program is free software: you can redistribute it and/or modify
 2016-06-01:		v0.1
 
  TODO:
- 	-Finish keywords file
-	-Finish sendWords()
-	-Finish printResponse()
 	-Save SRL in the EEPROM
 	-Test reset()
 -----------------------------------------------------------------------------
@@ -226,8 +224,6 @@ class DynamixelClass {
 		int sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams);
 		int readWord(uint8_t ID, uint8_t address, int noParams);
 		void readWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int noParams, int *response);
-
-		void printResponse(uint8_t *response);
 
 		void begin(long baud, uint8_t directionPin);
 		void begin(long baud);
