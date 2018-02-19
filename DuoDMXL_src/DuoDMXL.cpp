@@ -1,5 +1,5 @@
 /*
-DuoDMXL v1.6.1
+DuoDMXL v1.7
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,8 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-02-19:		v1.7	Tested more throughoughly readWords(). Timming tests
+ 						Improved sendWord(). Correct use when using ping(), BROADCAST_ID, and SRL
 2018-02-17:		v1.6.1	set/get methods for _directionPin and _baudrateDMXL
 						Add servoIntroduction() and printPC/printlnPC macros
 2018-02-16:		v1.6	Add waitData() functions. Avoid blocking if no response is obtained
@@ -58,11 +60,9 @@ This program is free software: you can redistribute it and/or modify
 
  TODO:
 	-Finish sendWords()
-	-Finish readWords()
 	-Finish printResponse()
 	-Save SRL in the EEPROM
 	-Test reset()
-	-Test ping()
 -----------------------------------------------------------------------------
 
  Contact: 	burgundianvolker@gmail.com
@@ -104,8 +104,6 @@ This program is free software: you can redistribute it and/or modify
 	#define printPC(value) 			(Serial.print(value))  		// Print to the PC
 	#define printlnPC(value) 		(Serial.println(value))  	// Print to the PC
 #endif
-
-
 
 // Private Methods //////////////////////////////////////////////////////////////
 
@@ -210,12 +208,12 @@ bool DynamixelClass::waitData(){
 	return true;
 }
 
-// Public Methods //////////////////////////////////////////////////////////////
+//-----------Public Methods-------------------------------------------------
 
 /*
 Function to set (write) the value of a servo's address.
 noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send
-In general instruction should be either DMXL_WRITE_DATA or DMXL_REG_WRITE
+In general, instruction should be either DMXL_WRITE_DATA or DMXL_REG_WRITE
 */
 int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParams, uint8_t instruction){
 	uint8_t param_MSB, param_LSB, length, lengthPackage;
@@ -273,9 +271,13 @@ int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParam
 	//free(package);
 	delete[] package;
 
-	//Depending on the current value of statusReturnLevel read or skip the status package
-	//if writting a word, then we only expect a package when statusReturnLevel is RETURN_ALL or PING was used (PING not currently supported)
-	if( (statusReturnLevel == RETURN_ALL) && (ID!=BROADCAST_ID) ){
+	/*
+	DuoDMXL v.1.7+. Usage of ping() seems to take priority over usage of BROADCAST_ID
+	If writting a word, then we only expect a package when PING was used, or statusReturnLevel is RETURN_ALL and not using broadcast ID
+	*/
+
+	//if( (ID!=BROADCAST_ID) && ((statusReturnLevel==RETURN_ALL) || (instruction == DMXL_PING))  ){ //Works correctly when using ping(ID). Communication error if using ping(BROADCAST_ID)
+	if( (instruction == DMXL_PING) || ((statusReturnLevel==RETURN_ALL) && (ID!=BROADCAST_ID)) ){
 		return(readInformation());
 	}
 	else{
@@ -287,12 +289,11 @@ int DynamixelClass::sendWord(uint8_t ID, uint8_t address, int param, int noParam
 //params is an array with values (one for each servo). noParams should be ONE_BYTE or TWO_BYTES, depending on how many bytes we need to send per servo
 int DynamixelClass::sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams){
 
-	// Alternative using REG_WRITE and ACTION
+	// ---------------Alternative using REG_WRITE and ACTION---------------
 
 	//1- Disable Status Packet for all servos. Since I am using the BROADCAST_ID I am not expecting a status return
 	uint8_t oldStatusReturnLevel = statusReturnLevel;
-
-	if(oldStatusReturnLevel == RETURN_ALL){
+	if(oldStatusReturnLevel != RETURN_READ){
 		sendWord(BROADCAST_ID, EEPROM_RETURN_LEVEL, RETURN_READ, ONE_BYTE, DMXL_WRITE_DATA);
 		statusReturnLevel = RETURN_READ;
 	}
@@ -306,7 +307,7 @@ int DynamixelClass::sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int
 	action(BROADCAST_ID);
 
 	//Re-enable the old status return level. Since I am using the BROADCAST_ID I am not expecting a status return
-	if(oldStatusReturnLevel == RETURN_ALL){
+	if(oldStatusReturnLevel != RETURN_READ){
 		sendWord(BROADCAST_ID, EEPROM_RETURN_LEVEL, oldStatusReturnLevel, ONE_BYTE, DMXL_WRITE_DATA);
 		statusReturnLevel = oldStatusReturnLevel;
 	}
@@ -314,7 +315,7 @@ int DynamixelClass::sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int
 	//TODO I should actually check for errors
 	return(NO_ERROR);
 
-	// //Alternative using sync_write
+	// //-------------Alternative using sync_write-----------------------------
 	//
 	// //1- Prepare information
 	// uint8_t length = (noParams+1)*noIDs + 4;				//instruction + address + noParams + (1 + noParams)*noIDs + checksum = (1 + noParams)*noIDs + 4
@@ -369,7 +370,7 @@ int DynamixelClass::readWord(uint8_t ID, uint8_t address, int noParams){
 
 	//Depending on the current value of statusReturnLevel read or skip the status package
 	//if reading a word, then we only expect a package when statusReturnLevel is RETURN_ALL or RETURN_READ
-	if(statusReturnLevel == RETURN_NONE){
+	if(statusReturnLevel==RETURN_NONE){
 		return(NO_ERROR);
 	}
 	else{
@@ -422,18 +423,17 @@ void DynamixelClass::readWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, in
 
 }
 
-//TODO: IMPROVE
+// TODO: Finish. Print the last package received
 void DynamixelClass::printResponse(uint8_t *response){
-	// for(uint8_t i=0; i<64; i++){
-	// 	*(response + i) = RESPONSE[i];
-	// }
-	Serial.println("The response obtained is: [");
+
+	printlnPC("The response obtained is: [");
 	for(uint8_t i=0; i<63;i++){
-	 	printPC(RESPONSE[i]);
+		printPC(RESPONSE[i]);
 	    printPC(",");
 	}
+
 	printPC(RESPONSE[63]);
-	Serial.println("]");
+	printlnPC("]");
 }
 
 //Initialize communication with the servos with a user-defined pin for the data direction control
@@ -496,21 +496,8 @@ int DynamixelClass::reset(uint8_t ID){
 }
 
 //Ping a servo
-//TODO: Test this function
 int DynamixelClass::ping(uint8_t ID){
-
-	Checksum = (~(ID + DMXL_READ_DATA + DMXL_PING))&0xFF;
-
-	uint8_t package[6] = {DMXL_START, DMXL_START, ID, LENGTH_PING, DMXL_PING, Checksum};
-
-	switchCom(_directionPin,Tx_MODE);
-	sendDataBuff(package, 6);
-	serialFlush();
-	switchCom(_directionPin,Rx_MODE);
-
-	return(readInformation());
-
-	//return(sendWord(ID, 0, 0, 0, DMXL_PING));
+	return(sendWord(ID, 0, 0, 0, DMXL_PING));
 }
 
 //Send the ACTION Instruction

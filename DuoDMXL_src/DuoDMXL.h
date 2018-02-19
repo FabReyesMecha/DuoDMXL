@@ -1,5 +1,5 @@
 /*
-DuoDMXL v1.6.1
+DuoDMXL v1.7
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,8 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-02-19:		v1.7	Tested more throughoughly readWords(). Timming tests
+						Improved sendWord(). Correct use when using ping(), BROADCAST_ID, and SRL
 2018-02-17:		v1.6.1	set/get methods for _directionPin and _baudrateDMXL
 						Add servoIntroduction() and printPC/printlnPC macros
 2018-02-16:		v1.6	Add waitData() functions. Avoid blocking if no response is obtained
@@ -59,11 +61,9 @@ This program is free software: you can redistribute it and/or modify
  TODO:
  	-Finish keywords file
 	-Finish sendWords()
-	-Finish readWords()
 	-Finish printResponse()
 	-Save SRL in the EEPROM
 	-Test reset()
-	-Test ping()
 -----------------------------------------------------------------------------
 
  Contact: 	burgundianvolker@gmail.com
@@ -178,39 +178,40 @@ class DynamixelClass {
 
 	private:
 
-		//Platform-dependent pins
-		#if (PLATFORM_ID==88) || defined(SPARK)
-			uint8_t _directionPin = D15;				//For Duo or Photon
-		#else
+  		// ---------------------------Platform-dependent pins
+  		#if (PLATFORM_ID==88) || defined(SPARK)
+  			uint8_t _directionPin = D15;				//For Duo or Photon
+  		#else
 			uint8_t _directionPin = 4;					//For Leonardo
-		#endif
+  		#endif
 
-		//Message Structure
-		static const uint8_t MIN_RETURN_LEN = 5;		//Minimum length of return package ({0xFF, 0xFF, ID, lengthMessage, Error_Byte, checksum})
+		// ---------------------------Message Structure
+		static const uint8_t MIN_RETURN_LEN = 5;		//Minimum length of return package {0xFF, 0xFF, ID, lengthMessage, Error_Byte, checksum}
 		uint8_t Incoming_Byte, dataLSB, dataMSB, Checksum;
 		int Error_Byte, data;
 
-		//Buffers
+		// ---------------------------Buffers
 		uint8_t PACKAGE[64] = {};
 		uint8_t RESPONSE[64]= {};
 
 		uint8_t statusReturnLevel = RETURN_ALL;			//Status return level. (default)2: Return for all commands. 1: Return only for the READ command. 0: No return (except PING)
 
-		//Error definitions. Use negative values.
+		// ---------------------------Error definitions. Use negative values.
 		static const int NO_ERROR = 0;
 		static const int NO_SERVO_RESPONSE = -1;
 		static const int LENGTH_INCORRECT = -2;
 
-		//Variables regarding performance of DuoDMXL
+		// ---------------------------Variables regarding performance of DuoDMXL
 		long _baudrateDMXL = 0;							//Current baudrate used with the servos
 		static const uint16_t USBSERIAL_TIMEOUT = 2000;	//Waiting time [ms] after Serial.begin() with PC. It allows the device to be recognized properly
 		static const uint16_t DMXLSERIAL_TIMEOUT = 500;	//Waiting time [ms] after Serial1.begin() with servos
 		uint8_t TIME_OUT = 50;        					//Waiting time (milliseconds) for the incomming data from servomotor. Recommended value:50
 		uint16_t COOL_DOWN = 0;							//Cool down period (milliseconds) before sending another command to the dynamixel servomotor
 
-		//flags
+		// ---------------------------flags
 		bool _response_within_timeout = true;			//Assume every byte of the response is within time
 
+		// ---------------------------Communication related functions
 		int readInformation(void);
 
 		bool waitData(int, int);
@@ -219,7 +220,8 @@ class DynamixelClass {
 
 	public:
 
-		//General functions
+		// ---------------------------General functions
+
 		int sendWord(uint8_t ID, uint8_t address, int params, int noParams, uint8_t instruction);
 		int sendWords(uint8_t IDs[], uint8_t noIDs, uint8_t address, int params[], int noParams);
 		int readWord(uint8_t ID, uint8_t address, int noParams);
@@ -235,7 +237,8 @@ class DynamixelClass {
 		int ping(uint8_t ID);
 		void action(uint8_t ID);
 
-		//EEPROM Area Instructions
+		// ---------------------------EEPROM Area Instructions
+
 		int readModel(uint8_t ID);
 		int readFirmware(uint8_t ID);
 		int setID(uint8_t ID, uint8_t newID);
@@ -269,7 +272,8 @@ class DynamixelClass {
 		int setResolutionDivider(uint8_t ID, uint8_t divider);
 		int readResolutionDivider(uint8_t ID);
 
-		//RAM Area Instructions
+		// ---------------------------RAM Area Instructions
+
 		int torqueEnable(uint8_t ID, bool Status);
 		int torqueEnableStatus(uint8_t ID);
 		int ledStatus(uint8_t ID, bool Status);
@@ -303,7 +307,8 @@ class DynamixelClass {
 		int setGoalTorque(uint8_t ID, int torque);
 		int setGoalAccel(uint8_t ID, uint8_t accel);
 
-		//Custom functions
+		// ---------------------------Custom functions
+
 		int setAng(uint8_t ID, float angle);
 		int setAng(uint8_t ID, float angle, char unit);
 		void setDirectionPin(uint8_t pin);
@@ -322,7 +327,8 @@ class DynamixelClass {
 		void changeCoolDown(uint16_t newCoolDown);
 		void servoIntroduction(uint8_t ID);
 
-		//Multi-compatibility functions
+		// ---------------------------Multi-compatibility functions
+
 		void sendData(uint8_t);
 		void sendDataBuff(uint8_t*, uint8_t);
 		int availableData(void);
