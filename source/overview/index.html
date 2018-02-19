@@ -207,8 +207,8 @@
 <p>The package sent to the servo and the response obtained must have the following structure:</p>
 <p><img alt="protocol" src="../../img/communicationProtocol.png" title="Communication Protocol" />
 <em>Overview of the communication protocol.</em></p>
-<p>Both the <em>package</em> and <em>response</em> always have two bytes as <strong>header</strong> which must be <strong>0xFF</strong> (or 255 as base 10 integer). The <strong>instruction</strong> byte refers to the action to perform (write, read, etc.). <strong>Params</strong> is a series of bytes including the address that will be accesed on the servomotor and additional information. Do not worry, <strong>DuoDMXL</strong> takes care of parsing the package correctly and sending it.</p>
-<p>The minimal response obtained for each exhange with the servo will be of six bytes (no data requested). Although the response can be disabled altogether, <strong>DuoDMXL</strong> assumes that this response is enabled always. In other words, do not turn it off unless you are willing to tweak the source code.</p>
+<p>Both the <em>package</em> and <em>response</em> always have two bytes as <strong>header</strong> which must be <strong>0xFF</strong> (or 255 as base 10 integer). The <strong>instruction</strong> byte refers to the action to perform (write, read, etc.). <strong>Params</strong> is a series of bytes including the address that will be accessed on the servomotor and additional information. Do not worry, <strong>DuoDMXL</strong> takes care of parsing the package correctly and sending it.</p>
+<p>The minimal response obtained for each exchange with the servo will be of six bytes (no data requested). Although the response can be disabled altogether, <strong>DuoDMXL</strong> assumes that this response is enabled always. In other words, do not turn it off unless you are willing to tweak the source code.</p>
 <h2 id="how-to-use-the-library">How to use the library</h2>
 <p>First, copy the source files into your Arduino libraries folder. You can find more instructions on the web.
 Your folder structure should look similar to this:</p>

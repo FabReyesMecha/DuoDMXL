@@ -210,8 +210,8 @@
 <li><code>readWord()</code> which reads the current value of a register of the servo.</li>
 <li><code>readInformation()</code> which reads a response (set of bytes) from the servomotors. It could be requested information or a simple no-error response.</li>
 </ol>
-<p>and all other functions call these basic functions with the appropiate parameters. This not only decreases the code size, but also allows for easier creation of user-defined functions.</p>
-<p>The Dynamixel servos have their own protocol for communication, which you can check in the communication section of the <a href="http://support.robotis.com/en/">ROBOTIS manual</a>. Depending on the servos you are communicating with, you need to transform UART signal from the the Duo (or Photon) unto a half-duples TTL signal for some servos (e.g., MX-64T) which can be done with a tri-state buffer, or use a RS-485 transceiver for servos that use RS-485 bus (e.g., MX-64AR).</p>
+<p>and all other functions call these basic functions with the appropriate parameters. This not only decreases the code size, but also allows for easier creation of user-defined functions.</p>
+<p>The Dynamixel servos have their own protocol for communication, which you can check in the communication section of the <a href="http://support.robotis.com/en/">ROBOTIS manual</a>. Depending on the servos you are communicating with, you need to transform UART signal from the the Duo (or Photon) unto a half-duplex TTL signal for some servos (e.g., MX-64T) which can be done with a tri-state buffer, or use a RS-485 transceiver for servos that use RS-485 bus (e.g., MX-64AR).</p>
 <p><img alt="Overview Communication" src="./img/overviewCommunication.png" title="Overview of Communication" />
 <em>Overview of communication. A more complete setup (including power lines) is included in the <strong>Hardware</strong> section.</em></p>
 <p>The DuoDMXL repository includes eagle schematics and board layouts for two types of 'shields'. The <strong>Duo Tri-state Buffer Shield</strong> is used for half-duplex communication. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin, and changes it into communication with only one line of data. The <strong>Duo RS-485 Shield</strong> is used to communicate with a RS-485 transceiver. It takes the TX and RX signal from the DUO (or Photon) and the signal of a control pin and outputs differential communication through the two signals D+ and D- (also called A and B). The library works equally with both hardware setups.</p>
@@ -252,7 +252,7 @@ This library is mainly intended to be used with the Arduino IDE. Just download t
 </tr>
 <tr>
 <td align="left">Hardware</td>
-<td align="left">Documentation for the shields necessary to interface the DYNAMIXEL servos with the Duo (RedBear) ot Photon (Particle).</td>
+<td align="left">Documentation for the shields necessary to interface the DYNAMIXEL servos with the Duo (RedBear) or Photon (Particle).</td>
 </tr>
 <tr>
 <td align="left">Examples &amp; Tests</td>
@@ -262,6 +262,7 @@ This library is mainly intended to be used with the Arduino IDE. Just download t
 </table>
 <h2 id="log">Log</h2>
 <ul>
+<li>[2018-02-19]: Uploaded <strong>DuoDMXL</strong> v1.8</li>
 <li>[2017-05-05]: Stable release <strong>DuoDMXL</strong> v1.0 uploaded</li>
 <li>[2017-05-04]: Uploaded <strong>DuoDMXL</strong> v0.3</li>
 </ul>
@@ -311,5 +312,5 @@ This library is mainly intended to be used with the Arduino IDE. Just download t
 
 <!--
 MkDocs version : 0.16.1
-Build Date UTC : 2017-05-05 07:46:59
+Build Date UTC : 2018-02-19 14:36:19
 -->
