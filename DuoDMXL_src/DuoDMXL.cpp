@@ -1,5 +1,5 @@
 /*
-DuoDMXL v1.8
+DuoDMXL v2.0
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,9 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-02-26		v2.0	Stable Version
+ 						All functions tested
+ 						Added new example _05-Move_multiple_servos
 2018-02-19:		v1.8	sendWords() works correctly
 2018-02-19:		v1.7	Tested more throughoughly readWords(). Timming tests
  						Improved sendWord(). Correct use when using ping(), BROADCAST_ID, and SRL
@@ -438,9 +441,10 @@ void DynamixelClass::end(){
 	endCom();
 }
 
-//Function inherited from Savage's library. NOT fully tested or supported by DuoDMXL yet
-//TODO: Test this funtion
+//Function inherited from Savage's library
 int DynamixelClass::reset(uint8_t ID){
+
+	// -----------old method. Preserved for reference
 	Checksum = (~(ID + LENGTH_RESET + DMXL_RESET))&0xFF;
 
 	uint8_t package[6] = {DMXL_START, DMXL_START, ID, LENGTH_RESET, DMXL_RESET, Checksum};
@@ -455,6 +459,7 @@ int DynamixelClass::reset(uint8_t ID){
 
 	return(readInformation());
 
+	// -----------new method
 	// //Upon reset, SRL should be set to RETURN_ALL
 	// statusReturnLevel = RETURN_ALL;
 	// return(sendWord(ID, 0, 0, 0, DMXL_RESET));

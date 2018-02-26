@@ -1,5 +1,5 @@
 /*
-DuoDMXL v1.8
+DuoDMXL v2.0
 MX-64AR Half Duplex USART/RS-485 Communication Library
 -----------------------------------------------------------------------------
 Target Boards:
@@ -34,6 +34,9 @@ This program is free software: you can redistribute it and/or modify
 -----------------------------------------------------------------------------
  Log:
 
+2018-02-26		v2.0	Stable Version
+						All functions tested
+						Added new example _05-Move_multiple_servos
 2018-02-19:		v1.8	sendWords() works correctly
 2018-02-19:		v1.7	Tested more throughoughly readWords(). Timming tests
 						Improved sendWord(). Correct use when using ping(), BROADCAST_ID, and SRL
